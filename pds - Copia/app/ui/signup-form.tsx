@@ -1,7 +1,7 @@
 'use client'
 
-import Link from 'next/link'
 import { signup } from '@/app/actions/auth'
+import Link from 'next/link'
 import { useActionState } from 'react'
 
 export default function SignupForm() {
@@ -64,7 +64,7 @@ export default function SignupForm() {
             <div className="text-sm text-red-500 mt-1">
               <p className="font-medium">Password must:</p>
               <ul className="list-disc list-inside">
-                {state.errors.password.map((error:string) => (
+                {state.errors.password.map((error) => (
                   <li key={error}>{error}</li>
                 ))}
               </ul>
@@ -81,11 +81,18 @@ export default function SignupForm() {
           {pending ? 'Creating account...' : 'Sign Up'}
         </button>
 
-        {/* Optional footer */}
+        {state?.message && (
+          <p className="text-sm text-red-500 text-center">{state.message}</p>
+        )}
+
         <p className="text-sm text-gray-500 text-center">
           Ja tem uma conta?{' '}
-          <span className="text-blue-600 hover:underline cursor-pointer">
-           Entrar          </span>
+          <Link
+            href="/login"
+            className="text-blue-600 hover:underline"
+          >
+            Entrar
+          </Link>
         </p>
       </form>
     </div>
