@@ -1,15 +1,16 @@
 'use server'
 
-import { supabase } from '@/app/lib/supabase'
+import { createClient } from '@/lib/supabase/server'
 
 export async function signup(prevState: any, formData: FormData) {
+  const supabase = await createClient()
+
   const name = formData.get('name') as string
   const email = formData.get('email') as string
   const password = formData.get('password') as string
 
   const errors: any = {}
 
-  // Basic validation
   if (!name) errors.name = 'Nome é obrigatório'
   if (!email) errors.email = 'Email é obrigatório'
   if (!password || password.length < 6) {
@@ -20,14 +21,11 @@ export async function signup(prevState: any, formData: FormData) {
     return { errors }
   }
 
-  // Supabase signup
-  const { data, error } = await supabase.auth.signUp({
+  const { error } = await supabase.auth.signUp({
     email,
     password,
     options: {
-      data: {
-        name, // saves in user_metadata
-      },
+      data: { name },
     },
   })
 
@@ -44,13 +42,15 @@ export async function signup(prevState: any, formData: FormData) {
     message: 'Check your email to confirm your account',
   }
 }
+
 export async function login(prevState: any, formData: FormData) {
+  const supabase = await createClient()
+
   const email = formData.get('email') as string
   const password = formData.get('password') as string
 
   const errors: any = {}
 
-  // Validation
   if (!email) errors.email = 'Email é obrigatório'
   if (!password) errors.password = 'Senha é obrigatória'
 
@@ -58,8 +58,7 @@ export async function login(prevState: any, formData: FormData) {
     return { errors }
   }
 
-  // Supabase login
-  const { data, error } = await supabase.auth.signInWithPassword({
+  const { error } = await supabase.auth.signInWithPassword({
     email,
     password,
   })
@@ -72,7 +71,5 @@ export async function login(prevState: any, formData: FormData) {
     }
   }
 
-  return {
-    success: true,
-  }
+  return { success: true }
 }

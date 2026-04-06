@@ -3,17 +3,16 @@
 import { login } from '@/app/actions/auth'
 import { useActionState, useEffect } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 
 export default function LoginForm() {
   const [state, action, pending] = useActionState(login, undefined)
-  const router = useRouter()
 
   useEffect(() => {
     if (state?.success) {
-      router.push('/dashboard')
+      // ✅ IMPORTANT: full page reload so cookies are applied
+      window.location.href = '/Parking'
     }
-  }, [state, router])
+  }, [state])
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">

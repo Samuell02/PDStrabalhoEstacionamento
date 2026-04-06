@@ -83,10 +83,14 @@ export default function SignupForm() {
 
         {/* Optional footer */}
         <p className="text-sm text-gray-500 text-center">
-          Ja tem uma conta?{' '}
-          <span className="text-blue-600 hover:underline cursor-pointer">
-           Entrar          </span>
-        </p>
+  Ja tem uma conta?{' '}
+  <Link
+    href="/login"
+    className="text-blue-600 hover:underline"
+  >
+    Entrar
+  </Link>
+</p>
       </form>
     </div>
   )
