@@ -13,7 +13,7 @@ export async function createParking(space: string, name: string, plate: string) 
     return { error: 'Not authenticated' }
   }
 
-  // 🚫 Prevent double booking
+ 
   const { data: existing } = await supabase
     .from('parking_spot')
     .select('id')
@@ -25,31 +25,31 @@ export async function createParking(space: string, name: string, plate: string) 
   }
 
   const { error } = await supabase.from('parking_spot').insert([
-    {
-      space,
-      name,
-      plate,
-      user_id: user.id,
-    },
-  ])
+  {
+    space,
+    name,
+    plate,
+    
+  },
+])
 
-  if (error) {
-    return { error: error.message }
+if (error) {
+  if (error.message.includes('unique_space')) {
+    return { error: 'This spot is already occupied' }
   }
 
-  return { success: true }
+  return { error: error.message }
+}
 }
 
-//////////////////////////////////////////////////////
-// ✅ NEW: Get all occupied spaces
-//////////////////////////////////////////////////////
+
 
 export async function getParkings() {
   const supabase = await createClient()
 
   const { data, error } = await supabase
     .from('parking_spot')
-    .select('space')
+    .select('space, name, plate')
 
   if (error) {
     return { error: error.message }
@@ -58,9 +58,7 @@ export async function getParkings() {
   return { data }
 }
 
-//////////////////////////////////////////////////////
-// ✅ OPTIONAL: Remove parking (free a spot)
-//////////////////////////////////////////////////////
+
 
 export async function removeParking(space: string) {
   const supabase = await createClient()
