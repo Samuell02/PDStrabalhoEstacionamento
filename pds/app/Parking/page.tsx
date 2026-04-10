@@ -22,12 +22,20 @@ export default function Page() {
   const [initialLoading, setInitialLoading] = React.useState(true)
 
   const [parkedSpaces, setParkedSpaces] = React.useState<Record<string, ParkingSpot>>({})
+  const [mySpace, setMySpace] = React.useState('')
+  const [myName, setMyName] = React.useState('')
   const [myPlate, setMyPlate] = React.useState('')
+  const [isAdmin, setIsAdmin] = React.useState(false)
 
-  // Load night mode preference
   React.useEffect(() => {
     const saved = localStorage.getItem('nightMode')
     if (saved !== null) setNightMode(JSON.parse(saved))
+
+    const savedSpace = localStorage.getItem('mySpace')
+    if (savedSpace) setMySpace(savedSpace)
+
+    const savedName = localStorage.getItem('myName')
+    if (savedName) setMyName(savedName)
 
     const savedPlate = localStorage.getItem('myPlate')
     if (savedPlate) setMyPlate(savedPlate)
@@ -37,15 +45,14 @@ export default function Page() {
     localStorage.setItem('nightMode', JSON.stringify(nightMode))
   }, [nightMode])
 
-
   React.useEffect(() => {
     async function loadSpaces() {
       const res = await getParkings()
-       console.log('RAW getParkings result:', JSON.stringify(res)) 
+      if (res?.isAdmin) setIsAdmin(true)
       if (res?.data) {
         const mapped: Record<string, ParkingSpot> = {}
-        for (const row of res.data as { space: string; name: string; plate: string }[]) {
-          mapped[row.space] = { name: row.name, plate: row.plate }
+        for (const row of res.data as { space: string; name?: string; plate?: string }[]) {
+          mapped[row.space] = { name: row.name ?? '', plate: row.plate ?? '' }
         }
         setParkedSpaces(mapped)
       }
@@ -55,7 +62,7 @@ export default function Page() {
   }, [])
 
   const isOccupied = (space: string) => !!parkedSpaces[space]
-  const isMySpot = (space: string) => parkedSpaces[space]?.plate === myPlate && !!myPlate
+  const isMySpot = (space: string) => mySpace === space && !!mySpace
 
   const openModal = (space: string) => setSelectedSpace(space)
 
@@ -87,8 +94,11 @@ export default function Page() {
       [selectedSpace]: { name, plate },
     }))
 
-    
+    setMySpace(selectedSpace)
+    setMyName(name)
     setMyPlate(plate)
+    localStorage.setItem('mySpace', selectedSpace)
+    localStorage.setItem('myName', name)
     localStorage.setItem('myPlate', plate)
 
     alert('Saved successfully!')
@@ -112,6 +122,13 @@ export default function Page() {
       return next
     })
 
+    setMySpace('')
+    setMyName('')
+    setMyPlate('')
+    localStorage.removeItem('mySpace')
+    localStorage.removeItem('myName')
+    localStorage.removeItem('myPlate')
+
     alert('Spot freed!')
     closeModal()
   }
@@ -130,6 +147,16 @@ export default function Page() {
 
   const selectedIsOccupied = selectedSpace ? isOccupied(selectedSpace) : false
   const selectedIsMySpot = selectedSpace ? isMySpot(selectedSpace) : false
+
+  const getOccupiedMessage = () => {
+    if (selectedIsMySpot) {
+      return `This is your spot. ${myName} (${myPlate})`
+    }
+    if (isAdmin && selectedSpace) {
+      return `Occupied by ${parkedSpaces[selectedSpace]?.name} (${parkedSpaces[selectedSpace]?.plate})`
+    }
+    return 'This spot is occupied.'
+  }
 
   return (
     <div
@@ -178,11 +205,7 @@ export default function Page() {
 
             {selectedIsOccupied ? (
               <>
-                <p className="text-sm mb-4 text-gray-400">
-                  {selectedIsMySpot
-                    ? 'This is your spot.'
-                    : `Occupied by ${parkedSpaces[selectedSpace]?.name} (${parkedSpaces[selectedSpace]?.plate})`}
-                </p>
+                <p className="text-sm mb-4 text-gray-400">{getOccupiedMessage()}</p>
 
                 {selectedIsMySpot && (
                   <button
