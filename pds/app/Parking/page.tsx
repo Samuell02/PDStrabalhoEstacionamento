@@ -1,8 +1,10 @@
 'use client'
 
 import React from 'react'
-import { Moon, Sun } from 'lucide-react'
+import { Moon, Sun, LogOut } from 'lucide-react'
 import { createParking, getParkings, removeParking } from '@/app/actions/parking'
+import { createClient } from '@/lib/supabase/client'
+import { useRouter } from 'next/navigation'
 
 type ParkingSpot = {
   name: string
@@ -12,9 +14,19 @@ type ParkingSpot = {
 export default function Page() {
   const rows = ['a', 'b']
   const columns = Array.from({ length: 14 }, (_, i) => i + 1)
+  const router = useRouter()
 
   const [selectedSpace, setSelectedSpace] = React.useState<string | null>(null)
-  const [nightMode, setNightMode] = React.useState(false)
+
+  const [nightMode, setNightMode] = React.useState(() => {
+    if (typeof window === 'undefined') return false
+    try {
+      const saved = localStorage.getItem('nightMode')
+      return saved !== null ? JSON.parse(saved) : false
+    } catch {
+      return false
+    }
+  })
 
   const [name, setName] = React.useState('')
   const [plate, setPlate] = React.useState('')
@@ -28,9 +40,6 @@ export default function Page() {
   const [isAdmin, setIsAdmin] = React.useState(false)
 
   React.useEffect(() => {
-    const saved = localStorage.getItem('nightMode')
-    if (saved !== null) setNightMode(JSON.parse(saved))
-
     const savedSpace = localStorage.getItem('mySpace')
     if (savedSpace) setMySpace(savedSpace)
 
@@ -61,6 +70,12 @@ export default function Page() {
     loadSpaces()
   }, [])
 
+  const handleLogout = async () => {
+    const supabase = createClient()
+    await supabase.auth.signOut()
+    router.push('/login')
+  }
+
   const isOccupied = (space: string) => !!parkedSpaces[space]
   const isMySpot = (space: string) => mySpace === space && !!mySpace
 
@@ -72,7 +87,7 @@ export default function Page() {
     setPlate('')
   }
 
-  const toggleNightMode = () => setNightMode((prev) => !prev)
+  const toggleNightMode = () => setNightMode((prev: boolean) => !prev)
 
   const handleSubmit = async () => {
     if (!name || !plate || !selectedSpace) {
@@ -270,13 +285,26 @@ export default function Page() {
       >
         <div className="flex flex-col items-center gap-3">
           <div className="flex flex-wrap justify-center gap-4 text-sm font-medium">
-            <span>🟢 Green = Available</span>
-            <span>🔴 Red = Occupied (by others)</span>
-            <span>🔵 Blue = Your parking</span>
+            <span>🟢   Disponivel</span>
+            <span>🔴   Ocupado (por outros)</span>
+            <span>🔵   Seu estacionamento</span>
           </div>
-          <button onClick={toggleNightMode}>
-            {nightMode ? <Sun /> : <Moon />}
-          </button>
+          <div className="flex items-center gap-4">
+            <button onClick={toggleNightMode}>
+              {nightMode ? <Sun /> : <Moon />}
+            </button>
+            <button
+              onClick={handleLogout}
+              className={`flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-lg transition-colors ${
+                nightMode
+                  ? 'text-red-400 hover:bg-red-900/30'
+                  : 'text-red-500 hover:bg-red-50'
+              }`}
+            >
+              <LogOut size={16} />
+              Sair
+            </button>
+          </div>
         </div>
       </footer>
     </div>
