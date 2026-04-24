@@ -18,15 +18,7 @@ export default function Page() {
 
   const [selectedSpace, setSelectedSpace] = React.useState<string | null>(null)
 
-  const [nightMode, setNightMode] = React.useState(() => {
-    if (typeof window === 'undefined') return false
-    try {
-      const saved = localStorage.getItem('nightMode')
-      return saved !== null ? JSON.parse(saved) : false
-    } catch {
-      return false
-    }
-  })
+  const [nightMode, setNightMode] = React.useState(false)
 
   const [name, setName] = React.useState('')
   const [plate, setPlate] = React.useState('')
@@ -38,6 +30,13 @@ export default function Page() {
   const [myName, setMyName] = React.useState('')
   const [myPlate, setMyPlate] = React.useState('')
   const [isAdmin, setIsAdmin] = React.useState(false)
+
+  React.useEffect(() => {
+    try {
+      const saved = localStorage.getItem('nightMode')
+      if (saved !== null) setNightMode(JSON.parse(saved))
+    } catch {}
+  }, [])
 
   React.useEffect(() => {
     const savedSpace = localStorage.getItem('mySpace')
@@ -60,7 +59,7 @@ export default function Page() {
       if (res?.isAdmin) setIsAdmin(true)
       if (res?.data) {
         const mapped: Record<string, ParkingSpot> = {}
-        for (const row of res.data as { space: string; name?: string; plate?: string }[]) {
+        for (const row of res.data as unknown as { space: string; name?: string; plate?: string }[]) {
           mapped[row.space] = { name: row.name ?? '', plate: row.plate ?? '' }
         }
         setParkedSpaces(mapped)
@@ -216,7 +215,7 @@ export default function Page() {
             }`}
             onClick={(e) => e.stopPropagation()}
           >
-            <h2 className="text-2xl font-bold mb-1">Parking Space {selectedSpace}</h2>
+            <h2 className="text-2xl font-bold mb-1">Espaço de Estacionamento {selectedSpace}</h2>
 
             {selectedIsOccupied ? (
               <>
@@ -252,6 +251,7 @@ export default function Page() {
                   />
                   <input
                     placeholder="Car plate"
+                    maxLength={7}
                     value={plate}
                     onChange={(e) => setPlate(e.target.value)}
                     className="w-full border p-2 rounded text-black"
