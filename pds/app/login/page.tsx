@@ -8,18 +8,21 @@ import { Moon, Sun } from 'lucide-react'
 export default function LoginForm() {
   const [state, action, pending] = useActionState(login, undefined)
 
-  const [night, setNight] = useState(() => {
-    if (typeof window === 'undefined') return false
-    try {
-      const saved = localStorage.getItem('nightMode')
-      return saved !== null ? JSON.parse(saved) : false
-    } catch {
-      return false
-    }
-  })
+  const [night, setNight] = useState(false)
+
+  useEffect(() => {
+    const isDark = document.documentElement.classList.contains('dark')
+    if (isDark !== night) setNight(isDark)
+  }, [])
 
   useEffect(() => {
     localStorage.setItem('nightMode', JSON.stringify(night))
+    const html = document.documentElement
+    const bg = night ? '#1a1a1a' : '#FFF5F2'
+    html.classList.toggle('dark', night)
+    html.style.setProperty('--bg-color', bg)
+    html.style.backgroundColor = bg
+    html.style.colorScheme = night ? 'dark' : 'light'
   }, [night])
 
   useEffect(() => {
@@ -42,7 +45,7 @@ export default function LoginForm() {
   return (
     <div
       className="min-h-screen flex items-center justify-center px-4 transition-colors duration-300"
-      style={{ backgroundColor: bg }}
+      style={{ backgroundColor: 'var(--bg-color)' }}
     >
       <div aria-hidden style={{ position: 'fixed', top: '-80px', right: '-80px', width: '320px', height: '320px', borderRadius: '50%', background: night ? 'rgba(59,130,246,0.08)' : 'rgba(147,197,253,0.18)', filter: 'blur(48px)', pointerEvents: 'none' }} />
       <div aria-hidden style={{ position: 'fixed', bottom: '-60px', left: '-60px', width: '260px', height: '260px', borderRadius: '50%', background: night ? 'rgba(59,130,246,0.06)' : 'rgba(96,165,250,0.13)', filter: 'blur(40px)', pointerEvents: 'none' }} />

@@ -1,7 +1,7 @@
 'use client'
 
 import React from 'react'
-import { Moon, Sun, LogOut, CreditCard, QrCode, FileText, Car, X, CheckCircle, AlertCircle, Clock } from 'lucide-react'
+import { Moon, Sun, LogOut, CreditCard, QrCode, Car, X, CheckCircle, AlertCircle } from 'lucide-react'
 import {
   createCheckoutSession,
   getParkings,
@@ -12,18 +12,8 @@ import { createClient } from '@/lib/supabase/client'
 import { useRouter, useSearchParams } from 'next/navigation'
 
 type ParkingSpot = { name: string; plate: string }
-type PaymentMethod = 'card' | 'pix' | 'boleto'
-type ToastType = 'success' | 'error' | 'pending'
+type PaymentMethod = 'card' | 'pix'
 type ModalStep = 'info' | 'payment' | 'processing'
-
-// ─── CPF formatter ────────────────────────────────────────────────────────────
-function formatCpf(value: string) {
-  const d = value.replace(/\D/g, '').slice(0, 11)
-  return d
-    .replace(/(\d{3})(\d)/, '$1.$2')
-    .replace(/(\d{3})(\d)/, '$1.$2')
-    .replace(/(\d{3})(\d{1,2})$/, '$1-$2')
-}
 
 // ─── Toast ────────────────────────────────────────────────────────────────────
 function Toast({
@@ -32,16 +22,13 @@ function Toast({
   onClose,
 }: {
   message: string
-  type: ToastType
+  type: 'success' | 'error'
   onClose: () => void
 }) {
   React.useEffect(() => {
-    const t = setTimeout(onClose, type === 'pending' ? 8000 : 4000)
+    const t = setTimeout(onClose, 4000)
     return () => clearTimeout(t)
-  }, [onClose, type])
-
-  const bg   = type === 'success' ? '#16a34a' : type === 'error' ? '#dc2626' : '#d97706'
-  const Icon = type === 'success' ? CheckCircle : type === 'error' ? AlertCircle : Clock
+  }, [onClose])
 
   return (
     <div
@@ -52,26 +39,26 @@ function Toast({
         transform: 'translateX(-50%)',
         zIndex: 200,
         display: 'flex',
-        alignItems: 'flex-start',
+        alignItems: 'center',
         gap: '0.625rem',
-        padding: '0.875rem 1.25rem',
+        padding: '0.75rem 1.25rem',
         borderRadius: '12px',
-        background: bg,
+        background: type === 'success' ? '#16a34a' : '#dc2626',
         color: '#fff',
         fontFamily: "'DM Sans', sans-serif",
-        fontSize: '0.875rem',
+        fontSize: '0.9rem',
         fontWeight: 500,
         boxShadow: '0 8px 32px rgba(0,0,0,0.25)',
         animation: 'toastIn 0.3s cubic-bezier(0.16,1,0.3,1) both',
-        maxWidth: 'min(440px, calc(100vw - 3rem))',
-        lineHeight: 1.5,
+        whiteSpace: 'nowrap',
+        maxWidth: 'calc(100vw - 3rem)',
       }}
     >
-      <Icon size={18} style={{ flexShrink: 0, marginTop: 1 }} />
-      <span style={{ overflow: 'hidden' }}>{message}</span>
+      {type === 'success' ? <CheckCircle size={18} /> : <AlertCircle size={18} />}
+      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{message}</span>
       <button
         onClick={onClose}
-        style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer', padding: 0, marginLeft: 4, display: 'flex', flexShrink: 0 }}
+        style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer', padding: 0, marginLeft: 4, display: 'flex' }}
       >
         <X size={15} />
       </button>
@@ -99,12 +86,9 @@ export default function Page() {
   const [myName, setMyName] = React.useState('')
   const [myPlate, setMyPlate] = React.useState('')
   const [isAdmin, setIsAdmin] = React.useState(false)
-  const [toast, setToast] = React.useState<{ message: string; type: ToastType } | null>(null)
+  const [toast, setToast] = React.useState<{ message: string; type: 'success' | 'error' } | null>(null)
 
-  const showToast = (message: string, type: ToastType = 'success') => setToast({ message, type })
-
-  // cpf — only required for boleto
-  const [cpf, setCpf] = React.useState('')
+  const showToast = (message: string, type: 'success' | 'error') => setToast({ message, type })
 
   // ── Restore localStorage ──────────────────────────────────────────────────
   React.useEffect(() => {
@@ -166,12 +150,7 @@ export default function Page() {
           return
         }
 
-        const { space: s, name: n, plate: p, isPending } = res as {
-          space: string
-          name: string
-          plate: string
-          isPending?: boolean
-        }
+        const { space: s, name: n, plate: p } = res as { space: string; name: string; plate: string }
 
         setParkedSpaces((prev) => ({ ...prev, [s]: { name: n, plate: p } }))
         setMySpace(s)
@@ -181,15 +160,7 @@ export default function Page() {
         localStorage.setItem('myName', n)
         localStorage.setItem('myPlate', p)
 
-        if (isPending) {
-          // Boleto: spot held in UI, but webhook confirms when bank payment arrives
-          showToast(
-            `Boleto emitido! Pague em até 3 dias úteis para confirmar a vaga ${s.toUpperCase()}.`,
-            'pending',
-          )
-        } else {
-          showToast(`Vaga ${s.toUpperCase()} reservada com sucesso!`, 'success')
-        }
+        showToast(`Vaga ${s.toUpperCase()} reservada com sucesso!`, 'success')
       })()
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -210,7 +181,6 @@ export default function Page() {
     setModalStep('info')
     setName('')
     setPlate('')
-    setCpf('')
     setPaymentMethod('card')
   }
 
@@ -219,7 +189,6 @@ export default function Page() {
     setModalStep('info')
     setName('')
     setPlate('')
-    setCpf('')
   }
 
   // ── Submit: go to Stripe Checkout ─────────────────────────────────────────
@@ -229,21 +198,10 @@ export default function Page() {
       return
     }
 
-    if (paymentMethod === 'boleto' && cpf.replace(/\D/g, '').length !== 11) {
-      showToast('Informe um CPF válido para pagamento via boleto.', 'error')
-      return
-    }
-
     setLoading(true)
     setModalStep('processing')
 
-    const res = await createCheckoutSession(
-      selectedSpace,
-      name.trim(),
-      plate.trim().toUpperCase(),
-      paymentMethod,
-      paymentMethod === 'boleto' ? cpf : undefined,
-    )
+    const res = await createCheckoutSession(selectedSpace, name.trim(), plate.trim().toUpperCase(), paymentMethod)
     setLoading(false)
 
     if (res?.error) {
@@ -410,29 +368,24 @@ export default function Page() {
 
         /* Payment method picker */
         .pay-section-label { font-size: 0.8125rem; font-weight: 600; color: ${n ? '#c4bdb7' : '#44403c'}; margin-bottom: 0.625rem; letter-spacing: 0.01em; }
-        .pay-methods { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.5rem; margin-bottom: 1.125rem; }
+        .pay-methods { display: grid; grid-template-columns: 1fr 1fr; gap: 0.625rem; margin-bottom: 1.25rem; }
         .pay-method-btn {
-          display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 0.3rem;
-          padding: 0.875rem 0.375rem 0.75rem; border-radius: 12px; cursor: pointer; transition: all 0.15s;
+          display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.4rem;
+          padding: 1rem 0.5rem; border-radius: 12px; cursor: pointer; transition: all 0.15s;
           border: 2px solid ${colors.cardBorder}; background: ${colors.inputBg};
-          font-family: 'DM Sans', sans-serif; text-align: center;
+          font-family: 'DM Sans', sans-serif;
         }
         .pay-method-btn:hover { border-color: #3b82f6; }
-        .pay-method-btn.selected-card   { border-color: #3b82f6; background: rgba(59,130,246,0.08); }
-        .pay-method-btn.selected-pix    { border-color: #009879; background: rgba(0,152,121,0.08); }
-        .pay-method-btn.selected-boleto { border-color: #d97706; background: rgba(217,119,6,0.08); }
-        .pay-method-name { font-size: 0.8125rem; font-weight: 600; color: ${colors.text}; }
-        .pay-method-desc { font-size: 0.6875rem; color: ${colors.muted}; }
+        .pay-method-btn.selected { border-color: #3b82f6; background: rgba(59,130,246,0.08); }
+        .pay-method-icon { font-size: 1.5rem; line-height: 1; }
+        .pay-method-name { font-size: 0.875rem; font-weight: 600; color: ${colors.text}; }
+        .pay-method-desc { font-size: 0.75rem; color: ${colors.muted}; text-align: center; }
         .pay-method-badge {
-          font-size: 0.6rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase;
-          padding: 0.15rem 0.45rem; border-radius: 999px; margin-top: 0.15rem;
+          font-size: 0.65rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase;
+          padding: 0.125rem 0.5rem; border-radius: 999px;
         }
-        .badge-instant { background: rgba(22,163,74,0.12);  color: #16a34a; }
-        .badge-pix     { background: rgba(0,152,121,0.12);  color: #009879; }
-        .badge-boleto  { background: rgba(217,119,6,0.12);  color: #d97706; }
-
-        /* CPF field — only shown for boleto */
-        .cpf-info { font-size: 0.8125rem; color: #92400e; background: ${n ? 'rgba(217,119,6,0.1)' : '#fefce8'}; border: 1px solid ${n ? 'rgba(217,119,6,0.25)' : '#fde68a'}; border-radius: 8px; padding: 0.625rem 0.875rem; margin-bottom: 0.875rem; line-height: 1.5; }
+        .badge-instant { background: rgba(22,163,74,0.12); color: #16a34a; }
+        .badge-pix     { background: rgba(0,152,121,0.12); color: #009879; }
 
         /* Price summary */
         .price-summary {
@@ -456,8 +409,6 @@ export default function Page() {
         .btn-primary:not(:disabled):hover { background: #2563eb; transform: translateY(-1px); }
         .btn-success { background: #16a34a; color: #fff; box-shadow: 0 4px 12px rgba(22,163,74,0.3); }
         .btn-success:not(:disabled):hover { background: #15803d; transform: translateY(-1px); }
-        .btn-amber { background: #d97706; color: #fff; box-shadow: 0 4px 12px rgba(217,119,6,0.3); }
-        .btn-amber:not(:disabled):hover { background: #b45309; transform: translateY(-1px); }
         .btn-danger { background: #dc2626; color: #fff; box-shadow: 0 4px 12px rgba(220,38,38,0.25); }
         .btn-danger:not(:disabled):hover { background: #b91c1c; transform: translateY(-1px); }
         .btn-ghost { background: ${n ? '#232323' : '#f5f3ef'}; border: 1.5px solid ${colors.cardBorder}; color: ${colors.muted}; }
@@ -636,60 +587,28 @@ export default function Page() {
                     <>
                       <p className="pay-section-label">Forma de pagamento</p>
                       <div className="pay-methods">
-
                         {/* Card */}
                         <button
-                          className={`pay-method-btn ${paymentMethod === 'card' ? 'selected-card' : ''}`}
+                          className={`pay-method-btn ${paymentMethod === 'card' ? 'selected' : ''}`}
                           onClick={() => setPaymentMethod('card')}
                         >
-                          <CreditCard size={20} color={paymentMethod === 'card' ? '#3b82f6' : colors.muted} />
+                          <CreditCard size={24} color={paymentMethod === 'card' ? '#3b82f6' : colors.muted} />
                           <span className="pay-method-name">Cartão</span>
                           <span className="pay-method-desc">Crédito ou débito</span>
-                          <span className="pay-method-badge badge-instant">Imediato</span>
+                          <span className="pay-method-badge badge-instant">Aprovação imediata</span>
                         </button>
 
                         {/* Pix */}
                         <button
-                          className={`pay-method-btn ${paymentMethod === 'pix' ? 'selected-pix' : ''}`}
+                          className={`pay-method-btn ${paymentMethod === 'pix' ? 'selected' : ''}`}
                           onClick={() => setPaymentMethod('pix')}
                         >
-                          <QrCode size={20} color={paymentMethod === 'pix' ? '#009879' : colors.muted} />
+                          <QrCode size={24} color={paymentMethod === 'pix' ? '#009879' : colors.muted} />
                           <span className="pay-method-name">Pix</span>
-                          <span className="pay-method-desc">QR Code</span>
-                          <span className="pay-method-badge badge-pix">30 min</span>
-                        </button>
-
-                        {/* Boleto */}
-                        <button
-                          className={`pay-method-btn ${paymentMethod === 'boleto' ? 'selected-boleto' : ''}`}
-                          onClick={() => setPaymentMethod('boleto')}
-                        >
-                          <FileText size={20} color={paymentMethod === 'boleto' ? '#d97706' : colors.muted} />
-                          <span className="pay-method-name">Boleto</span>
-                          <span className="pay-method-desc">Bancário</span>
-                          <span className="pay-method-badge badge-boleto">3 dias</span>
+                          <span className="pay-method-desc">QR Code instantâneo</span>
+                          <span className="pay-method-badge badge-pix">Expira em 10 min</span>
                         </button>
                       </div>
-
-                      {/* CPF — required for boleto */}
-                      {paymentMethod === 'boleto' && (
-                        <>
-                          <p className="cpf-info">
-                            ⚠️ Boleto requer CPF. A vaga só será confirmada após o pagamento no banco (até 3 dias úteis).
-                          </p>
-                          <div className="input-group">
-                            <label className="input-label">CPF do titular</label>
-                            <input
-                              className="modal-input"
-                              placeholder="000.000.000-00"
-                              value={cpf}
-                              onChange={e => setCpf(formatCpf(e.target.value))}
-                              inputMode="numeric"
-                              maxLength={14}
-                            />
-                          </div>
-                        </>
-                      )}
 
                       <div className="price-summary">
                         <span className="price-label">Reserva — Vaga {selectedSpace.toUpperCase()}</span>
@@ -697,13 +616,13 @@ export default function Page() {
                       </div>
 
                       <button
-                        className={`modal-btn ${paymentMethod === 'boleto' ? 'btn-amber' : 'btn-success'}`}
+                        className="modal-btn btn-success"
                         onClick={handleCheckout}
                         disabled={loading}
                       >
-                        {paymentMethod === 'card'   && <><CreditCard size={16} /> Pagar com Cartão</>}
-                        {paymentMethod === 'pix'    && <><QrCode size={16} /> Gerar QR Code Pix</>}
-                        {paymentMethod === 'boleto' && <><FileText size={16} /> Emitir Boleto</>}
+                        {paymentMethod === 'card'
+                          ? <><CreditCard size={16} /> Pagar com Cartão</>
+                          : <><QrCode size={16} /> Gerar QR Code Pix</>}
                       </button>
 
                       <button
