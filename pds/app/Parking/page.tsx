@@ -166,7 +166,8 @@ export default function Page() {
           return
         }
 
-        const { space: s, name: n, plate: p, isPending } = res
+        const { space: s, name: n, plate: p } = res
+        const isPending = 'isPending' in res && res.isPending
 
         setParkedSpaces((prev) => ({ ...prev, [s]: { name: n, plate: p } }))
         setMySpace(s)
@@ -241,13 +242,13 @@ export default function Page() {
     )
     setLoading(false)
 
-    if (res?.error) {
+    if (res && 'error' in res) {
       showToast('Erro ao iniciar pagamento: ' + res.error, 'error')
       setModalStep('payment')
       return
     }
 
-    if (res?.url) {
+    if (res && 'url' in res && res.url) {
       window.location.href = res.url
     }
   }
@@ -259,7 +260,7 @@ export default function Page() {
     const res = await removeParking(selectedSpace)
     setLoading(false)
 
-    if (res?.error) {
+    if (res && 'error' in res) {
       showToast('Erro ao liberar: ' + res.error, 'error')
       return
     }
