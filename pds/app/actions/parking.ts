@@ -124,7 +124,7 @@ export async function createCheckoutSession(
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
 
-  const baseParams: Stripe.Checkout.Session.CreateParams = {
+  const baseParams: Stripe.Checkout.SessionCreateParams = {
     line_items: [
       {
         price_data: {
