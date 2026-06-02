@@ -15,7 +15,7 @@ import Stripe from 'stripe'
 import { createClient } from '@/lib/supabase/server'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2025-03-31.basil',
+  apiVersion: '2026-05-27.dahlia',
 })
 
 // Required: parse the raw body so Stripe can verify the signature.
