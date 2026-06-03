@@ -1,6 +1,6 @@
 'use client'
 
-import React, { Suspense } from 'react'
+import React from 'react'
 import { Moon, Sun, LogOut, CreditCard, QrCode, FileText, Car, X, CheckCircle, AlertCircle, Clock } from 'lucide-react'
 import {
   createCheckoutSession,
@@ -109,7 +109,7 @@ function Toast({
 }
 
 // ─── Page component ──────────────────────────────────────────────────────────
-function ParkingPage() {
+export default function Page() {
   const rows = ['a', 'b']
   const columns = Array.from({ length: 14 }, (_, i) => i + 1)
   const router = useRouter()
@@ -159,7 +159,7 @@ function ParkingPage() {
       if (res?.isAdmin) setIsAdmin(true)
       if (res?.data) {
         const mapped: Record<string, ParkingSpot> = {}
-        for (const row of res.data as { space: string; name?: string; plate?: string }[]) {
+        for (const row of res.data as unknown as { space: string; name?: string; plate?: string }[]) {
           mapped[row.space] = { name: row.name ?? '', plate: row.plate ?? '' }
         }
         setParkedSpaces(mapped)
@@ -298,13 +298,5 @@ function ParkingPage() {
       {/* ... all your JSX unchanged ... */}
       {/* Add your modal, grid, toast components here as before */}
     </div>
-  )
-}
-
-export default function Page() {
-  return (
-    <Suspense fallback={null}>
-      <ParkingPage />
-    </Suspense>
   )
 }
