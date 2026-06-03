@@ -1,6 +1,6 @@
 'use client'
 
-import React from 'react'
+import React, { Suspense } from 'react'
 import { Moon, Sun, LogOut, CreditCard, QrCode, FileText, Car, X, CheckCircle, AlertCircle, Clock } from 'lucide-react'
 import {
   createCheckoutSession,
@@ -109,7 +109,7 @@ function Toast({
 }
 
 // ─── Page component ──────────────────────────────────────────────────────────
-export default function Page() {
+function ParkingInner() {
   const rows = ['a', 'b']
   const columns = Array.from({ length: 14 }, (_, i) => i + 1)
   const router = useRouter()
@@ -298,5 +298,12 @@ export default function Page() {
       {/* ... all your JSX unchanged ... */}
       {/* Add your modal, grid, toast components here as before */}
     </div>
+  )
+}
+export default function Page() {
+  return (
+    <Suspense fallback={null}>
+      <ParkingInner />
+    </Suspense>
   )
 }
