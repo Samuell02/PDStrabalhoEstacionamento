@@ -159,7 +159,7 @@ export default function Page() {
       if (res?.isAdmin) setIsAdmin(true)
       if (res?.data) {
         const mapped: Record<string, ParkingSpot> = {}
-        for (const row of res.data as { space: string; name?: string; plate?: string }[]) {
+        for (const row of res.data as unknown as { space: string; name?: string; plate?: string }[]) {
           mapped[row.space] = { name: row.name ?? '', plate: row.plate ?? '' }
         }
         setParkedSpaces(mapped)
