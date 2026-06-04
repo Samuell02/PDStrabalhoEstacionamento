@@ -1,6 +1,8 @@
 'use client'
 
-import React from 'react'
+export const dynamic = 'force-dynamic'
+
+import React, { Suspense } from 'react'
 import { Moon, Sun, LogOut, CreditCard, QrCode, FileText, Car, X, CheckCircle, AlertCircle, Clock } from 'lucide-react'
 import {
   createCheckoutSession,
@@ -80,7 +82,7 @@ function Toast({
 }
 
 // ─── Main page ────────────────────────────────────────────────────────────────
-export default function Page() {
+function ParkingInner() {
   const rows = ['a', 'b']
   const columns = Array.from({ length: 14 }, (_, i) => i + 1)
   const router = useRouter()
@@ -731,5 +733,12 @@ export default function Page() {
         )}
       </div>
     </>
+  )
+}
+export default function Page() {
+  return (
+    <Suspense fallback={null}>
+      <ParkingInner />
+    </Suspense>
   )
 }
