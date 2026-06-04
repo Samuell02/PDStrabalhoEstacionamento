@@ -161,7 +161,7 @@ export default function Page() {
     if (status === 'success' && sessionId && space) {
       ;(async () => {
         const res = await verifyAndFinalizeSession(sessionId)
-        if (res?.error) {
+        if (!res || ('error' in res)) {
           showToast('Pagamento confirmado, mas houve um erro ao salvar a vaga. Contate o suporte.', 'error')
           return
         }
@@ -246,7 +246,7 @@ export default function Page() {
     )
     setLoading(false)
 
-    if (res?.error) {
+    if (!res || ('error' in res)) {
       showToast('Erro ao iniciar pagamento: ' + res.error, 'error')
       setModalStep('payment')
       return
@@ -264,7 +264,7 @@ export default function Page() {
     const res = await removeParking(selectedSpace)
     setLoading(false)
 
-    if (res?.error) {
+    if (!res || ('error' in res)) {
       showToast('Erro ao liberar: ' + res.error, 'error')
       return
     }
