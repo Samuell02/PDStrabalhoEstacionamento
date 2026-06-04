@@ -161,17 +161,13 @@ export default function Page() {
     if (status === 'success' && sessionId && space) {
       ;(async () => {
         const res = await verifyAndFinalizeSession(sessionId)
-        if (!res || ('error' in res)) {
+        if (!res || 'error' in res) {
           showToast('Pagamento confirmado, mas houve um erro ao salvar a vaga. Contate o suporte.', 'error')
           return
         }
 
-        const { space: s, name: n, plate: p, isPending } = res as {
-          space: string
-          name: string
-          plate: string
-          isPending?: boolean
-        }
+        const { space: s, name: n, plate: p } = res
+        const isPending = 'isPending' in res && res.isPending
 
         setParkedSpaces((prev) => ({ ...prev, [s]: { name: n, plate: p } }))
         setMySpace(s)
@@ -246,13 +242,13 @@ export default function Page() {
     )
     setLoading(false)
 
-    if (!res || ('error' in res)) {
-      showToast('Erro ao iniciar pagamento: ' + res.error, 'error')
+    if (!res || 'error' in res) {
+      showToast('Erro ao iniciar pagamento: ' + (res && 'error' in res ? res.error : 'Erro desconhecido'), 'error')
       setModalStep('payment')
       return
     }
 
-    if (res?.url) {
+    if ('url' in res && res.url) {
       window.location.href = res.url
     }
   }
@@ -264,8 +260,8 @@ export default function Page() {
     const res = await removeParking(selectedSpace)
     setLoading(false)
 
-    if (!res || ('error' in res)) {
-      showToast('Erro ao liberar: ' + res.error, 'error')
+    if (!res || 'error' in res) {
+      showToast('Erro ao liberar: ' + (res && 'error' in res ? res.error : 'Erro desconhecido'), 'error')
       return
     }
 
