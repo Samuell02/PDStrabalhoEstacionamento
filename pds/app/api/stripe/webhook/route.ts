@@ -12,14 +12,22 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import Stripe from 'stripe'
-import { createClient } from '@/lib/supabase/server'
+import { createClient } from '@supabase/supabase-js'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2026-05-27.dahlia',
 })
 
-// Required: parse the raw body so Stripe can verify the signature.
-export const config = { api: { bodyParser: false } }
+// Uses the service-role key to bypass RLS — required in webhook context
+// because there is no user session available.
+function getServiceSupabase() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  )
+}
+
+export const dynamic = 'force-dynamic'
 
 export async function POST(req: NextRequest) {
   const body = await req.text()
@@ -83,7 +91,8 @@ async function handlePaidSession(session: Stripe.Checkout.Session) {
     return
   }
 
-  const supabase = await createClient()
+  // Service-role client — bypasses RLS, works without a user session
+  const supabase = getServiceSupabase()
 
   // Idempotent: skip if already saved (e.g. verifyAndFinalizeSession ran first)
   const { data: existing } = await supabase
