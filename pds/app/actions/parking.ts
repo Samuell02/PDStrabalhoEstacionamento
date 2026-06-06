@@ -122,8 +122,12 @@ export async function createCheckoutSession(
     }
   }
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
+const appUrl =
+  process.env.VERCEL_PROJECT_PRODUCTION_URL
+    ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+    : process.env.NEXT_PUBLIC_APP_URL;
 
+    
   const baseParams: Stripe.Checkout.SessionCreateParams = {
     line_items: [
       {
