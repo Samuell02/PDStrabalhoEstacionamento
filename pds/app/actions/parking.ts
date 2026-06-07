@@ -1,7 +1,15 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
+import { createClient as createServiceClient } from '@supabase/supabase-js'
 import Stripe from 'stripe'
+
+function getServiceSupabase() {
+  return createServiceClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  )
+}
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2026-05-27.dahlia',
@@ -142,7 +150,7 @@ const appUrl =
         quantity: 1,
       },
     ],
-    mode: 'payment' as const,
+    mode: 'payment',
     success_url: `${appUrl}/Parking?session_id={CHECKOUT_SESSION_ID}&space=${space}&status=success`,
     cancel_url: `${appUrl}/Parking?space=${space}&status=cancelled`,
     metadata: { space, name, plate, user_id: user.id },
@@ -256,8 +264,11 @@ export async function verifyAndFinalizeSession(sessionId: string) {
 
 async function saveSpot(
   session: Awaited<ReturnType<typeof stripe.checkout.sessions.retrieve>>,
-  supabase: Awaited<ReturnType<typeof createClient>>,
+  _supabase?: unknown, // kept for signature compat, not used
 ) {
+  // Always use service role to bypass RLS — the user session may not be
+  // present after the Stripe redirect, and RLS blocks inserts otherwise.
+  const supabase = getServiceSupabase()
   const { space, name, plate } = session.metadata as { space: string; name: string; plate: string }
 
   console.log('📝 [Server] Dados da sessão:', { space, name, plate })
