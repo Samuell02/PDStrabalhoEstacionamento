@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createClient as createServiceClient } from '@supabase/supabase-js'
 import Stripe from 'stripe'
 
+// Service-role client — bypasses RLS entirely, no user session needed
 function getServiceSupabase() {
   return createServiceClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -85,22 +86,12 @@ export async function createParking(space: string, name: string, plate: string) 
 
 // ─── Stripe Checkout Session ───────────────────────────────────────────────
 
-/**
- * Creates a Stripe Checkout Session for card, Pix or Boleto.
- *
- * Boleto requires:
- *  - A Stripe Customer with name, email and CPF as a tax_id (br_cpf)
- *  - `cpf` param (11 digits) must be provided when method === 'boleto'
- *
- * The spot is NOT written to the DB here — the webhook does that after
- * payment confirmation (required for boleto's delayed-notification flow).
- */
 export async function createCheckoutSession(
   space: string,
   name: string,
   plate: string,
   method: 'card' | 'pix' | 'boleto',
-  cpf?: string, // required for boleto
+  cpf?: string,
 ) {
   const supabase = await createClient()
 
@@ -112,8 +103,9 @@ export async function createCheckoutSession(
     return { error: 'Not authenticated' }
   }
 
-  // Guard: spot must still be free
-  const { data: existing } = await supabase
+  // Use service role for guard check so RLS doesn't interfere
+  const serviceSupabase = getServiceSupabase()
+  const { data: existing } = await serviceSupabase
     .from('parking_spot')
     .select('id')
     .eq('space', space)
@@ -123,20 +115,18 @@ export async function createCheckoutSession(
     return { error: 'This spot is already occupied' }
   }
 
-  // Boleto validation
   if (method === 'boleto') {
     if (!cpf || cpf.replace(/\D/g, '').length !== 11) {
       return { error: 'CPF inválido. Informe os 11 dígitos para pagamento via boleto.' }
     }
   }
 
-const appUrl =
-  process.env.VERCEL_PROJECT_PRODUCTION_URL
-    ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
-    : process.env.NEXT_PUBLIC_APP_URL;
+  const appUrl =
+    process.env.VERCEL_PROJECT_PRODUCTION_URL
+      ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+      : process.env.NEXT_PUBLIC_APP_URL
 
-    
-  const baseParams: Stripe.Checkout.SessionCreateParams = {
+  const baseParams = {
     line_items: [
       {
         price_data: {
@@ -145,18 +135,17 @@ const appUrl =
             name: `Vaga ${space.toUpperCase()} — Estacionamento`,
             description: `Reserva para ${name} · Placa ${plate.toUpperCase()}`,
           },
-          unit_amount: 1000, // R$ 10,00
+          unit_amount: 1000,
         },
         quantity: 1,
       },
     ],
-    mode: 'payment',
+    mode: 'payment' as const,
     success_url: `${appUrl}/Parking?session_id={CHECKOUT_SESSION_ID}&space=${space}&status=success`,
     cancel_url: `${appUrl}/Parking?space=${space}&status=cancelled`,
     metadata: { space, name, plate, user_id: user.id },
   }
 
-  // ── Card ────────────────────────────────────────────────────────────────
   if (method === 'card') {
     const session = await stripe.checkout.sessions.create({
       ...baseParams,
@@ -165,21 +154,17 @@ const appUrl =
     return { url: session.url, sessionId: session.id }
   }
 
-  // ── Pix ─────────────────────────────────────────────────────────────────
   if (method === 'pix') {
     const session = await stripe.checkout.sessions.create({
       ...baseParams,
       payment_method_types: ['pix'],
-      expires_at: Math.floor(Date.now() / 1000) + 60 * 30, // Stripe minimum is 30 min
+      expires_at: Math.floor(Date.now() / 1000) + 60 * 30,
     })
     return { url: session.url, sessionId: session.id }
   }
 
-  // ── Boleto ───────────────────────────────────────────────────────────────
-  // Stripe requires a Customer with CPF registered as a tax_id for boleto.
+  // Boleto
   const cleanCpf = cpf!.replace(/\D/g, '')
-
-  // Reuse existing customer for this email, or create a new one
   const customers = await stripe.customers.list({ email: user.email!, limit: 1 })
   let customer = customers.data[0]
 
@@ -191,7 +176,6 @@ const appUrl =
       metadata: { supabase_user_id: user.id },
     })
   } else {
-    // Update name in case it changed; tax_ids are immutable after creation
     await stripe.customers.update(customer.id, { name })
   }
 
@@ -209,88 +193,65 @@ const appUrl =
 
 // ─── Verify session on success redirect ───────────────────────────────────
 
-/**
- * Called when Stripe redirects back to success_url.
- *
- * Card / Pix (instant):
- *   payment_status === 'paid' → spot may already be saved by the webhook.
- *   If not (webhook hasn't fired yet), we save it here as a fallback.
- *   Both paths are idempotent.
- *
- * Boleto (delayed notification):
- *   payment_status === 'unpaid' on redirect — the boleto PDF was issued but
- *   the customer hasn't paid yet. Per Stripe's recommendation we do NOT save
- *   the spot here. The webhook's async_payment_succeeded event will do that
- *   once the bank confirms payment (up to 3 business days).
- *   We return isPending: true so the UI can show an appropriate message.
- */
 export async function verifyAndFinalizeSession(sessionId: string) {
-  const supabase = await createClient()
-
   console.log('🔍 [Server] Buscando sessão Stripe:', sessionId)
   const session = await stripe.checkout.sessions.retrieve(sessionId)
   console.log('💳 [Server] Status:', session.payment_status, '| Método:', session.payment_method_types)
 
   const isBoleto = session.payment_method_types?.includes('boleto')
 
-  // ── Boleto: never finalize on redirect ─────────────────────────────────
   if (isBoleto) {
     const { space, name, plate } = session.metadata as { space: string; name: string; plate: string }
 
     if (session.payment_status === 'unpaid') {
-      // Expected: boleto issued, awaiting payment at the bank
       console.log('🕐 [Server] Boleto emitido — aguardando pagamento')
       return { space, name, plate, isPending: true }
     }
 
     if (session.payment_status === 'paid') {
-      // Rare: boleto paid so quickly the redirect already shows paid.
-      // Webhook will also fire — idempotency guard prevents double insert.
       console.log('✅ [Server] Boleto já pago — salvando como fallback')
-      return await saveSpot(session, supabase)
+      return await saveSpot(session)
     }
   }
 
-  // ── Card / Pix: must be paid ────────────────────────────────────────────
   if (session.payment_status !== 'paid') {
-    console.log('❌ [Server] Pagamento não confirmado')
+    console.log('❌ [Server] Pagamento não confirmado:', session.payment_status)
     return { error: 'Payment not confirmed yet' }
   }
 
-  return await saveSpot(session, supabase)
+  return await saveSpot(session)
 }
 
 // ─── Internal helper ──────────────────────────────────────────────────────
 
 async function saveSpot(
   session: Awaited<ReturnType<typeof stripe.checkout.sessions.retrieve>>,
-  _supabase?: unknown, // kept for signature compat, not used
 ) {
-  // Always use service role to bypass RLS — the user session may not be
-  // present after the Stripe redirect, and RLS blocks inserts otherwise.
-  const supabase = getServiceSupabase()
   const { space, name, plate } = session.metadata as { space: string; name: string; plate: string }
 
-  console.log('📝 [Server] Dados da sessão:', { space, name, plate })
+  console.log('📝 [Server] saveSpot chamado para vaga:', space)
 
-  const { data: existing } = await supabase
+  // Always use service role — bypasses RLS, works without user session
+  const supabase = getServiceSupabase()
+
+  const { data: existing, error: selectError } = await supabase
     .from('parking_spot')
     .select('id')
     .eq('space', space)
     .maybeSingle()
 
+  console.log('🔍 [Server] Vaga já existe?', existing, '| Erro select:', selectError)
+
   if (existing) {
-    // Webhook already saved it — just return so the UI can update
-    console.log('⚠️ [Server] Vaga já salva pelo webhook — retornando existente')
+    console.log('⚠️ [Server] Vaga já salva — retornando existente')
     return { space, name, plate, alreadySaved: true }
   }
 
-  // Fallback: webhook hasn't fired yet — save here (idempotent with webhook)
-  console.log('📝 [Server] Inserindo no Supabase (fallback):', { space, name, plate })
+  console.log('📝 [Server] Inserindo no Supabase:', { space, name, plate })
   const { error } = await supabase.from('parking_spot').insert([{ space, name, plate }])
 
   if (error) {
-    console.log('❌ [Server] Erro Supabase:', error)
+    console.log('❌ [Server] Erro no insert:', error.message, error.code, error.details)
     return { error: error.message }
   }
 
