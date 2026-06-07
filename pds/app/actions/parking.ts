@@ -142,7 +142,7 @@ const appUrl =
         quantity: 1,
       },
     ],
-    mode: 'payment',
+    mode: 'payment' as const,
     success_url: `${appUrl}/Parking?session_id={CHECKOUT_SESSION_ID}&space=${space}&status=success`,
     cancel_url: `${appUrl}/Parking?space=${space}&status=cancelled`,
     metadata: { space, name, plate, user_id: user.id },
