@@ -191,7 +191,7 @@ function ParkingInner() {
       })()
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [searchParams])
 
   // ── Helpers ───────────────────────────────────────────────────────────────
   const handleLogout = async () => {
