@@ -287,6 +287,7 @@ function ParkingInner() {
 
   const getOccupiedMessage = () => {
     if (selectedIsMySpot) return `Sua vaga — ${myName} (${myPlate})`
+    if (!selectedIsOccupied) return 'Esta vaga está disponível.'
     if (isAdmin && selectedSpace) return `Ocupada por ${parkedSpaces[selectedSpace]?.name} (${parkedSpaces[selectedSpace]?.plate})`
     return 'Esta vaga está ocupada.'
   }
