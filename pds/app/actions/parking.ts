@@ -29,13 +29,18 @@ export async function getParkings() {
 
   const { data, error } = await supabase
     .from('parking_spot')
-    .select(isAdmin ? 'space, name, plate' : 'space')
+    .select(isAdmin ? 'space, name, plate, user_id' : 'space, user_id')
 
   if (error) {
     return { error: error.message }
   }
 
-  return { data, isAdmin }
+  // Find the space belonging to the current user
+  const mySpaceData = data?.find(
+    (row: { user_id?: string }) => row.user_id === user?.id
+  ) as { space: string; name?: string; plate?: string } | undefined
+
+  return { data, isAdmin, mySpace: mySpaceData?.space ?? null }
 }
 
 export async function removeParking(space: string) {
@@ -247,8 +252,11 @@ async function saveSpot(
     return { space, name, plate, alreadySaved: true }
   }
 
-  console.log('📝 [Server] Inserindo no Supabase:', { space, name, plate })
-  const { error } = await supabase.from('parking_spot').insert([{ space, name, plate }])
+  // Retrieve user_id from session metadata (set during checkout)
+  const userId = session.metadata?.user_id
+
+  console.log('📝 [Server] Inserindo no Supabase:', { space, name, plate, userId })
+  const { error } = await supabase.from('parking_spot').insert([{ space, name, plate, user_id: userId ?? null }])
 
   if (error) {
     console.log('❌ [Server] Erro no insert:', error.message, error.code, error.details)
