@@ -139,11 +139,6 @@ function ParkingInner() {
         }
         setParkedSpaces(mapped)
       }
-      // Use server-returned mySpace (identified by user_id) — more reliable than localStorage
-      if (res && 'mySpace' in res && res.mySpace) {
-        setMySpace(res.mySpace as string)
-        localStorage.setItem('mySpace', res.mySpace as string)
-      }
       setInitialLoading(false)
     }
     loadSpaces()
