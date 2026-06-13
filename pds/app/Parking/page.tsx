@@ -145,6 +145,7 @@ function ParkingInner() {
         localStorage.setItem('mySpace', res.mySpace as string)
       }
       setInitialLoading(false)
+       console.log('DEBUG getParkings:', JSON.stringify(res)) 
     }
     loadSpaces()
   }, [])
