@@ -27,7 +27,9 @@ export async function getParkings() {
 
   const isAdmin = user?.user_metadata?.is_admin === true
 
-  const { data, error } = await supabase
+  // Use service role to fetch so RLS never blocks user_id column
+  const serviceSupabase = getServiceSupabase()
+  const { data, error } = await serviceSupabase
     .from('parking_spot')
     .select(isAdmin ? 'space, name, plate, user_id' : 'space, user_id')
 
