@@ -15,7 +15,7 @@ PASTAS_IGNORADAS = {
 PASTA_RAIZ = os.path.dirname(os.path.abspath(__file__))
 
 # Arquivo de saída na mesma pasta do script
-ARQUIVO_SAIDA = os.path.join(PASTA_RAIZ, "estrutura.json")
+ARQUIVO_SAIDA = os.path.join(PASTA_RAIZ, "estrutura2.json")
 
 
 def montar_estrutura(caminho):

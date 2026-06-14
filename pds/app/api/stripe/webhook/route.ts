@@ -80,10 +80,11 @@ export async function POST(req: NextRequest) {
 // ── Shared handler for paid sessions ────────────────────────────────────────
 
 async function handlePaidSession(session: Stripe.Checkout.Session) {
-  const { space, name, plate } = (session.metadata ?? {}) as {
+  const { space, name, plate, user_id } = (session.metadata ?? {}) as {
     space?: string
     name?: string
     plate?: string
+    user_id?: string
   }
 
   if (!space || !name || !plate) {
@@ -106,7 +107,7 @@ async function handlePaidSession(session: Stripe.Checkout.Session) {
     return
   }
 
-  const { error } = await supabase.from('parking_spot').insert([{ space, name, plate }])
+  const { error } = await supabase.from('parking_spot').insert([{ space, name, plate, user_id: user_id ?? null }])
 
   if (error) {
     console.error('[Webhook] DB insert error:', error.message)
