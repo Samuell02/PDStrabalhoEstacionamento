@@ -210,6 +210,13 @@ function ParkingInner() {
   const isMySpot = (space: string) => mySpace === space && !!mySpace
 
   const openModal = (space: string) => {
+    // Limit: one spot per user — block reserving a new available spot
+    // if the user already has one (their own spot can still be opened to free it)
+    if (mySpace && mySpace !== space && !isOccupied(space)) {
+      showToast(`Você já possui a vaga ${mySpace.toUpperCase()} reservada. Libere-a antes de reservar outra.`, 'error')
+      return
+    }
+
     setSelectedSpace(space)
     setModalStep('info')
     setName('')

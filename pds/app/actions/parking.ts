@@ -121,6 +121,17 @@ export async function createCheckoutSession(
     return { error: 'This spot is already occupied' }
   }
 
+  // Limit: one spot per user
+  const { data: userSpots } = await serviceSupabase
+    .from('parking_spot')
+    .select('space')
+    .eq('user_id', user.id)
+    .maybeSingle()
+
+  if (userSpots) {
+    return { error: `Você já possui a vaga ${(userSpots as { space: string }).space.toUpperCase()} reservada. Libere-a antes de reservar outra.` }
+  }
+
   if (method === 'boleto') {
     if (!cpf || cpf.replace(/\D/g, '').length !== 11) {
       return { error: 'CPF inválido. Informe os 11 dígitos para pagamento via boleto.' }
