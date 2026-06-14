@@ -482,7 +482,7 @@ function ParkingInner() {
         <header className="park-header">
           <div className="header-brand">
             <div className="header-icon"><Car size={16} /></div>
-            <span className="header-title">ParkSystem</span>
+            <span className="header-title">Sistema De Estacionamento da Ulbra</span>
           </div>
           <div className="header-actions">
             <button className="icon-btn" onClick={() => setNightMode(p => !p)} aria-label="Toggle theme">
