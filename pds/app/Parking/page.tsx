@@ -434,8 +434,8 @@ function ParkingInner() {
         .filter-dot.all   { background: ${colors.muted}; }
         .empty-filter { text-align: center; padding: 2rem 1rem; color: ${colors.muted}; font-size: 0.875rem; }
         .row-label { font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: ${n ? '#4b5563' : '#a8a29e'}; margin-bottom: 0.5rem; padding-left: 0.25rem; display: flex; align-items: center; justify-content: space-between; }
-        .row-toggle { display: flex; align-items: center; gap: 0.25rem; padding: 0.2rem 0.5rem; border-radius: 999px; border: 1px solid transparent; background: transparent; color: ${n ? '#4b5563' : '#a8a29e'}; font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; cursor: pointer; transition: all 0.15s; }
-        .row-toggle:hover { color: #3b82f6; border-color: #3b82f6; background: rgba(59,130,246,0.08); }
+        .row-toggle { display: flex; align-items: center; gap: 0.25rem; padding: 0.2rem 0.5rem; border-radius: 999px; border: 1.5px solid #3b82f6; background: rgba(59,130,246,0.08); color: #3b82f6; font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; cursor: pointer; transition: all 0.15s; }
+        .row-toggle:hover { background: rgba(59,130,246,0.18); }
         .hidden-rows-bar { display: flex; gap: 0.5rem; flex-wrap: wrap; justify-content: center; margin-top: 0.5rem; }
         .hidden-row-chip { display: flex; align-items: center; gap: 0.375rem; padding: 0.375rem 0.875rem; border-radius: 999px; border: 1.5px dashed ${colors.cardBorder}; background: ${colors.card}; color: ${colors.muted}; font-size: 0.8125rem; font-weight: 500; cursor: pointer; transition: all 0.15s; }
         .hidden-row-chip:hover { border-color: #3b82f6; color: #3b82f6; }
