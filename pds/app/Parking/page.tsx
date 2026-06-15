@@ -13,7 +13,7 @@ import {
 import { createClient } from '@/lib/supabase/client'
 import { useRouter, useSearchParams } from 'next/navigation'
 
-type ParkingSpot = { name: string; plate: string }
+type ParkingSpot = { name: string; plate: string; createdAt?: string }
 type PaymentMethod = 'card' | 'pix' | 'boleto'
 type ToastType = 'success' | 'error' | 'pending'
 type ModalStep = 'info' | 'payment' | 'processing'
@@ -26,6 +26,24 @@ function formatCpf(value: string) {
     .replace(/(\d{3})(\d)/, '$1.$2')
     .replace(/(\d{3})(\d)/, '$1.$2')
     .replace(/(\d{3})(\d{1,2})$/, '$1-$2')
+}
+
+// ─── Time elapsed formatter ───────────────────────────────────────────────────
+function formatDuration(createdAt?: string): string | null {
+  if (!createdAt) return null
+  const start = new Date(createdAt).getTime()
+  if (Number.isNaN(start)) return null
+
+  const diffMs = Date.now() - start
+  if (diffMs < 0) return null
+
+  const totalMinutes = Math.floor(diffMs / 60000)
+  const hours = Math.floor(totalMinutes / 60)
+  const minutes = totalMinutes % 60
+
+  if (hours === 0) return `${minutes}min`
+  if (minutes === 0) return `${hours}h`
+  return `${hours}h${minutes}min`
 }
 
 // ─── Toast ────────────────────────────────────────────────────────────────────
@@ -105,6 +123,13 @@ function ParkingInner() {
   const [toast, setToast] = React.useState<{ message: string; type: ToastType } | null>(null)
   const [spotFilter, setSpotFilter] = React.useState<SpotFilter>('all')
 
+  // Re-render every minute so "ocupada há Xmin" stays up to date
+  const [, setTick] = React.useState(0)
+  React.useEffect(() => {
+    const id = setInterval(() => setTick(t => t + 1), 60000)
+    return () => clearInterval(id)
+  }, [])
+
   const showToast = (message: string, type: ToastType = 'success') => setToast({ message, type })
 
   // cpf — only required for boleto
@@ -136,8 +161,8 @@ function ParkingInner() {
       if (res?.isAdmin) setIsAdmin(true)
       if (res?.data) {
         const mapped: Record<string, ParkingSpot> = {}
-        for (const row of res.data as unknown as { space: string; name?: string; plate?: string }[]) {
-          mapped[row.space] = { name: row.name ?? '', plate: row.plate ?? '' }
+        for (const row of res.data as unknown as { space: string; name?: string; plate?: string; created_at?: string }[]) {
+          mapped[row.space] = { name: row.name ?? '', plate: row.plate ?? '', createdAt: row.created_at }
         }
         setParkedSpaces(mapped)
       }
@@ -301,10 +326,13 @@ function ParkingInner() {
   const n = nightMode
 
   const getOccupiedMessage = () => {
-    if (selectedIsMySpot) return `Sua vaga — ${myName} (${myPlate})`
+    const duration = selectedSpace ? formatDuration(parkedSpaces[selectedSpace]?.createdAt) : null
+    const durationSuffix = duration ? ` há ${duration}` : ''
+
+    if (selectedIsMySpot) return `Sua vaga — ${myName} (${myPlate})${duration ? ` · ocupada há ${duration}` : ''}`
     if (!selectedIsOccupied) return 'Esta vaga está disponível.'
-    if (isAdmin && selectedSpace) return `Ocupada por ${parkedSpaces[selectedSpace]?.name} (${parkedSpaces[selectedSpace]?.plate})`
-    return 'Esta vaga está ocupada.'
+    if (isAdmin && selectedSpace) return `Ocupada por ${parkedSpaces[selectedSpace]?.name} (${parkedSpaces[selectedSpace]?.plate})${duration ? ` · há ${duration}` : ''}`
+    return `Esta vaga está ocupada${durationSuffix}.`
   }
 
   // ─── Styles ───────────────────────────────────────────────────────────────

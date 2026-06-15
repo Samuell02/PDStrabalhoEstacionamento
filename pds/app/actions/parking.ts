@@ -31,14 +31,14 @@ export async function getParkings() {
   const serviceSupabase = getServiceSupabase()
   const { data, error } = await serviceSupabase
     .from('parking_spot')
-    .select(isAdmin ? 'space, name, plate, user_id' : 'space, user_id')
+    .select(isAdmin ? 'space, name, plate, user_id, created_at' : 'space, user_id, created_at')
 
   if (error) {
     return { error: error.message }
   }
 
   // Find the space belonging to the current user
-  const rows = (data ?? []) as unknown as { space: string; name?: string; plate?: string; user_id?: string }[]
+  const rows = (data ?? []) as unknown as { space: string; name?: string; plate?: string; user_id?: string; created_at?: string }[]
   const mySpaceData = rows.find(row => row.user_id === user?.id)
 
   return { data, isAdmin, mySpace: mySpaceData?.space ?? null }
