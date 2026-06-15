@@ -210,13 +210,6 @@ function ParkingInner() {
   const isMySpot = (space: string) => mySpace === space && !!mySpace
 
   const openModal = (space: string) => {
-    // Limit: one spot per user — block reserving a new available spot
-    // if the user already has one (their own spot can still be opened to free it)
-    if (mySpace && mySpace !== space && !isOccupied(space)) {
-      showToast(`Você já possui a vaga ${mySpace.toUpperCase()} reservada. Libere-a antes de reservar outra.`, 'error')
-      return
-    }
-
     setSelectedSpace(space)
     setModalStep('info')
     setName('')
@@ -413,6 +406,11 @@ function ParkingInner() {
         .modal-title { font-family: 'DM Serif Display', serif; font-size: 1.5rem; color: ${colors.text}; margin-bottom: 0.25rem; }
         .modal-sub { font-size: 0.875rem; color: ${colors.muted}; margin-bottom: 1.25rem; }
 
+        .qr-wrap { display: flex; flex-direction: column; align-items: center; gap: 0.625rem; padding: 1.25rem 1rem; margin-bottom: 1.125rem; border-radius: 14px; background: ${n ? '#141414' : '#f5f3ef'}; border: 1px solid ${colors.cardBorder}; }
+        .qr-img { border-radius: 10px; background: #fff; padding: 8px; box-shadow: 0 4px 14px rgba(0,0,0,0.08); }
+        .qr-caption { font-size: 0.9375rem; font-weight: 600; color: ${colors.text}; font-family: 'DM Serif Display', serif; text-align: center; }
+        .qr-hint { font-size: 0.75rem; color: ${colors.muted}; text-align: center; max-width: 240px; line-height: 1.5; }
+
         /* Info step inputs */
         .input-group { display: flex; flex-direction: column; gap: 0.375rem; margin-bottom: 0.875rem; }
         .input-label { font-size: 0.8125rem; font-weight: 500; color: ${n ? '#c4bdb7' : '#44403c'}; }
@@ -594,9 +592,24 @@ function ParkingInner() {
                     <button onClick={closeModal} className="modal-btn btn-ghost">Fechar</button>
                   )}
 
-                  {/* ── My spot: free it ── */}
+                  {/* ── My spot: QR code + free it ── */}
                   {selectedIsMySpot && (
                     <>
+                      <div className="qr-wrap">
+                        <img
+                          className="qr-img"
+                          src={`https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(
+                            `VAGA:${selectedSpace.toUpperCase()}|PLACA:${myPlate}`
+                          )}`}
+                          alt={`QR Code da vaga ${selectedSpace.toUpperCase()}`}
+                          width={180}
+                          height={180}
+                        />
+                        <p className="qr-caption">
+                          Vaga {selectedSpace.toUpperCase()} · Placa {myPlate}
+                        </p>
+                        <p className="qr-hint">Mostre este código na entrada para validar sua reserva.</p>
+                      </div>
                       <button onClick={handleRemove} disabled={loading} className="modal-btn btn-danger">
                         {loading ? 'Liberando...' : 'Liberar minha vaga'}
                       </button>
