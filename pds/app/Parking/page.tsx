@@ -3,7 +3,7 @@
 export const dynamic = 'force-dynamic'
 
 import React, { Suspense } from 'react'
-import { Moon, Sun, LogOut, CreditCard, QrCode, FileText, Car, X, CheckCircle, AlertCircle, Clock } from 'lucide-react'
+import { Moon, Sun, LogOut, CreditCard, QrCode, FileText, Car, X, CheckCircle, AlertCircle, AlertTriangle, Clock } from 'lucide-react'
 import {
   createCheckoutSession,
   getParkings,
@@ -397,6 +397,8 @@ function ParkingInner() {
 
         /* Stats bar */
         .stats-bar { position: relative; z-index: 5; display: flex; align-items: center; justify-content: center; gap: 1.5rem; padding: 0.75rem 1.5rem; background: ${colors.statsBg}; border-bottom: 1px solid ${colors.statsBorder}; flex-wrap: wrap; }
+        .low-availability-banner { position: relative; z-index: 6; display: flex; align-items: center; justify-content: center; gap: 0.5rem; padding: 0.625rem 1.5rem; background: ${n ? 'rgba(217,119,6,0.15)' : '#fff7ed'}; border-bottom: 1px solid ${n ? 'rgba(217,119,6,0.3)' : '#fed7aa'}; color: ${n ? '#fdba74' : '#c2410c'}; font-size: 0.8125rem; font-weight: 600; text-align: center; animation: fadeIn 0.3s ease both; }
+        .low-availability-banner.critical { background: ${n ? 'rgba(220,38,38,0.15)' : '#fef2f2'}; border-bottom-color: ${n ? 'rgba(220,38,38,0.3)' : '#fecaca'}; color: ${n ? '#fca5a5' : '#dc2626'}; }
         .stat-pill { display: flex; align-items: center; gap: 0.5rem; font-size: 0.8125rem; font-weight: 500; color: ${colors.muted}; }
         .stat-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
         .stat-dot.green { background: #22c55e; box-shadow: 0 0 6px #22c55e60; }
@@ -539,6 +541,25 @@ function ParkingInner() {
             </button>
           </div>
         </header>
+
+        {/* ── Low availability banner ── */}
+        {!initialLoading && availableCount > 0 && availableCount <= 5 && (
+          <div className={`low-availability-banner ${availableCount <= 2 ? 'critical' : ''}`}>
+            <AlertTriangle size={15} />
+            <span>
+              {availableCount === 1
+                ? 'Resta apenas 1 vaga! Reserve agora antes que acabe.'
+                : `Restam apenas ${availableCount} vagas! Reserve agora antes que acabem.`}
+            </span>
+          </div>
+        )}
+
+        {!initialLoading && availableCount === 0 && (
+          <div className="low-availability-banner critical">
+            <AlertTriangle size={15} />
+            <span>Estacionamento lotado! Todas as vagas estão ocupadas.</span>
+          </div>
+        )}
 
         {/* ── Stats bar ── */}
         {!initialLoading && (
