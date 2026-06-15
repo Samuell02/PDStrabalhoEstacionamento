@@ -3,7 +3,7 @@
 export const dynamic = 'force-dynamic'
 
 import React, { Suspense } from 'react'
-import { Moon, Sun, LogOut, CreditCard, QrCode, FileText, Car, X, CheckCircle, AlertCircle, AlertTriangle, Clock } from 'lucide-react'
+import { Moon, Sun, LogOut, CreditCard, QrCode, FileText, Car, X, CheckCircle, AlertCircle, AlertTriangle, Clock, Eye, EyeOff } from 'lucide-react'
 import {
   createCheckoutSession,
   getParkings,
@@ -122,6 +122,15 @@ function ParkingInner() {
   const [isAdmin, setIsAdmin] = React.useState(false)
   const [toast, setToast] = React.useState<{ message: string; type: ToastType } | null>(null)
   const [spotFilter, setSpotFilter] = React.useState<SpotFilter>('all')
+  const [hiddenRows, setHiddenRows] = React.useState<string[]>([])
+
+  const toggleRowVisibility = (row: string) => {
+    setHiddenRows(prev => {
+      const next = prev.includes(row) ? prev.filter(r => r !== row) : [...prev, row]
+      localStorage.setItem('hiddenRows', JSON.stringify(next))
+      return next
+    })
+  }
 
   // Re-render every minute so "ocupada há Xmin" stays up to date
   const [, setTick] = React.useState(0)
@@ -148,6 +157,11 @@ function ParkingInner() {
     if (savedName) setMyName(savedName)
     const savedPlate = localStorage.getItem('myPlate')
     if (savedPlate) setMyPlate(savedPlate)
+
+    try {
+      const savedHidden = localStorage.getItem('hiddenRows')
+      if (savedHidden) setHiddenRows(JSON.parse(savedHidden))
+    } catch {}
   }, [])
 
   React.useEffect(() => {
@@ -419,7 +433,12 @@ function ParkingInner() {
         .filter-dot.red   { background: #ef4444; }
         .filter-dot.all   { background: ${colors.muted}; }
         .empty-filter { text-align: center; padding: 2rem 1rem; color: ${colors.muted}; font-size: 0.875rem; }
-        .row-label { font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: ${n ? '#4b5563' : '#a8a29e'}; margin-bottom: 0.5rem; padding-left: 0.25rem; }
+        .row-label { font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: ${n ? '#4b5563' : '#a8a29e'}; margin-bottom: 0.5rem; padding-left: 0.25rem; display: flex; align-items: center; justify-content: space-between; }
+        .row-toggle { display: flex; align-items: center; gap: 0.25rem; padding: 0.2rem 0.5rem; border-radius: 999px; border: 1px solid transparent; background: transparent; color: ${n ? '#4b5563' : '#a8a29e'}; font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; cursor: pointer; transition: all 0.15s; }
+        .row-toggle:hover { color: #3b82f6; border-color: #3b82f6; background: rgba(59,130,246,0.08); }
+        .hidden-rows-bar { display: flex; gap: 0.5rem; flex-wrap: wrap; justify-content: center; margin-top: 0.5rem; }
+        .hidden-row-chip { display: flex; align-items: center; gap: 0.375rem; padding: 0.375rem 0.875rem; border-radius: 999px; border: 1.5px dashed ${colors.cardBorder}; background: ${colors.card}; color: ${colors.muted}; font-size: 0.8125rem; font-weight: 500; cursor: pointer; transition: all 0.15s; }
+        .hidden-row-chip:hover { border-color: #3b82f6; color: #3b82f6; }
         .spot-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 0.5rem; margin-bottom: 1.5rem; }
 
         .spot-btn { aspect-ratio: 1 / 1.2; border-radius: 10px; border: 1.5px solid transparent; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; cursor: pointer; transition: all 0.15s; position: relative; overflow: hidden; font-family: 'DM Sans', sans-serif; }
@@ -609,7 +628,7 @@ function ParkingInner() {
                 </button>
               </div>
 
-              {rows.map(row => {
+              {rows.filter(row => !hiddenRows.includes(row)).map(row => {
                 const rowSpots = columns
                   .map(col => `${row}${col}`)
                   .filter(spaceName => {
@@ -622,7 +641,12 @@ function ParkingInner() {
 
                 return (
                   <div key={row}>
-                    <div className="row-label">Fileira {row.toUpperCase()}</div>
+                    <div className="row-label">
+                      <span>Fileira {row.toUpperCase()}</span>
+                      <button className="row-toggle" onClick={() => toggleRowVisibility(row)} title="Ocultar fileira">
+                        <EyeOff size={11} /> Ocultar
+                      </button>
+                    </div>
                     <div className="spot-grid">
                       {rowSpots.map(spaceName => {
                         const mine = isMySpot(spaceName)
@@ -645,8 +669,8 @@ function ParkingInner() {
                 )
               })}
 
-              {/* Empty state when filter has no matches */}
-              {rows.every(row =>
+              {/* Empty state when filter has no matches (only among visible rows) */}
+              {rows.filter(row => !hiddenRows.includes(row)).every(row =>
                 columns
                   .map(col => `${row}${col}`)
                   .filter(spaceName => {
@@ -656,7 +680,20 @@ function ParkingInner() {
                   }).length === 0
               ) && (
                 <div className="empty-filter">
-                  {spotFilter === 'available' ? 'Nenhuma vaga disponível no momento.' : 'Nenhuma vaga ocupada no momento.'}
+                  {hiddenRows.length === rows.length
+                    ? 'Todas as fileiras estão ocultas.'
+                    : spotFilter === 'available' ? 'Nenhuma vaga disponível no momento.' : 'Nenhuma vaga ocupada no momento.'}
+                </div>
+              )}
+
+              {/* Hidden rows — click to show again */}
+              {hiddenRows.length > 0 && (
+                <div className="hidden-rows-bar">
+                  {hiddenRows.map(row => (
+                    <button key={row} className="hidden-row-chip" onClick={() => toggleRowVisibility(row)}>
+                      <Eye size={13} /> Mostrar Fileira {row.toUpperCase()}
+                    </button>
+                  ))}
                 </div>
               )}
             </div>
