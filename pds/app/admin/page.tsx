@@ -7,6 +7,7 @@ import { Moon, Sun, LogOut, Car, Trash2, Shield, Users, ParkingSquare, CheckCirc
 import { getAllSpotsAdmin, adminRemoveParking } from '@/app/actions/parking'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
+import { notFound } from 'next/navigation'
 
 type Spot = {
   space: string
@@ -79,7 +80,7 @@ function AdminInner() {
     setLoading(true)
     const res = await getAllSpotsAdmin()
     if ('error' in res) {
-      if (res.error === 'Unauthorized') router.push('/Parking')
+      if (res.error === 'Unauthorized') notFound()
       showToast('Erro ao carregar dados.', 'error')
     } else {
       setSpots(res.spots)

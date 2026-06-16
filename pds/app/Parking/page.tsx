@@ -3,7 +3,7 @@
 export const dynamic = 'force-dynamic'
 
 import React, { Suspense } from 'react'
-import { Moon, Sun, LogOut, CreditCard, QrCode, FileText, Car, X, CheckCircle, AlertCircle, AlertTriangle, Clock, Eye, EyeOff } from 'lucide-react'
+import { Moon, Sun, LogOut, CreditCard, QrCode, FileText, Car, X, CheckCircle, AlertCircle, AlertTriangle, Clock, Eye, EyeOff, Shield } from 'lucide-react'
 import {
   createCheckoutSession,
   getParkings,
@@ -408,6 +408,8 @@ function ParkingInner() {
         .icon-btn:hover { border-color: #3b82f6; color: #3b82f6; }
         .logout-btn { display: flex; align-items: center; gap: 0.375rem; padding: 0.4375rem 0.875rem; border-radius: 9px; border: 1.5px solid ${colors.cardBorder}; background: ${colors.card}; color: ${n ? '#f87171' : '#dc2626'}; font-size: 0.8125rem; font-weight: 500; font-family: 'DM Sans', sans-serif; cursor: pointer; transition: all 0.15s; }
         .logout-btn:hover { border-color: #dc2626; background: ${n ? 'rgba(220,38,38,0.08)' : 'rgba(220,38,38,0.05)'}; }
+        .admin-btn { display: flex; align-items: center; gap: 0.375rem; padding: 0.4375rem 0.875rem; border-radius: 9px; border: 1.5px solid rgba(220,38,38,0.35); background: rgba(220,38,38,0.08); color: #dc2626; font-size: 0.8125rem; font-weight: 600; font-family: 'DM Sans', sans-serif; cursor: pointer; transition: all 0.15s; }
+        .admin-btn:hover { background: rgba(220,38,38,0.15); border-color: #dc2626; }
 
         /* Stats bar */
         .stats-bar { position: relative; z-index: 5; display: flex; align-items: center; justify-content: center; gap: 1.5rem; padding: 0.75rem 1.5rem; background: ${colors.statsBg}; border-bottom: 1px solid ${colors.statsBorder}; flex-wrap: wrap; }
@@ -552,6 +554,11 @@ function ParkingInner() {
             <span className="header-title">Sistema De Estacionamento da Ulbra</span>
           </div>
           <div className="header-actions">
+            {isAdmin && (
+              <button className="admin-btn" onClick={() => router.push('/admin')}>
+                <Shield size={14} /> Admin
+              </button>
+            )}
             <button className="icon-btn" onClick={() => setNightMode(p => !p)} aria-label="Toggle theme">
               {nightMode ? <Sun size={15} /> : <Moon size={15} />}
             </button>
