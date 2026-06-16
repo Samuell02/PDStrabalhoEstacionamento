@@ -44,6 +44,59 @@ export async function getParkings() {
   return { data, isAdmin, mySpace: mySpaceData?.space ?? null }
 }
 
+export async function getAllSpotsAdmin() {
+  const supabase = await createClient()
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user || user.user_metadata?.is_admin !== true) {
+    return { error: 'Unauthorized' }
+  }
+
+  const serviceSupabase = getServiceSupabase()
+
+  const { data, error } = await serviceSupabase
+    .from('parking_spot')
+    .select('space, name, plate, user_id, created_at')
+    .order('created_at', { ascending: false })
+
+  if (error) return { error: error.message }
+
+  const spots = (data ?? []) as {
+    space: string
+    name: string
+    plate: string
+    user_id: string | null
+    created_at: string | null
+  }[]
+
+  return { spots }
+}
+
+export async function adminRemoveParking(space: string) {
+  const supabase = await createClient()
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user || user.user_metadata?.is_admin !== true) {
+    return { error: 'Unauthorized' }
+  }
+
+  const serviceSupabase = getServiceSupabase()
+  const { error } = await serviceSupabase
+    .from('parking_spot')
+    .delete()
+    .eq('space', space)
+
+  if (error) return { error: error.message }
+
+  return { success: true }
+}
+
 export async function removeParking(space: string) {
   const supabase = await createClient()
 
