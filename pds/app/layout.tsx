@@ -29,15 +29,6 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <head>
-        <style>{`
-          html {
-            opacity: 0;
-            transition: opacity 0.15s ease;
-          }
-          html.theme-ready {
-            opacity: 1;
-          }
-        `}</style>
         <script
           dangerouslySetInnerHTML={{
             __html: `
@@ -52,7 +43,6 @@ export default function RootLayout({
                   html.style.backgroundColor = bg;
                   html.style.colorScheme = isDark ? 'dark' : 'light';
                 } catch (e) {}
-                document.documentElement.classList.add('theme-ready');
               })();
             `,
           }}
