@@ -166,6 +166,12 @@ function ParkingInner() {
 
   React.useEffect(() => {
     localStorage.setItem('nightMode', JSON.stringify(nightMode))
+    const html = document.documentElement
+    const bg = nightMode ? '#1a1a1a' : '#FFF5F2'
+    html.classList.toggle('dark', nightMode)
+    html.style.setProperty('--bg-color', bg)
+    html.style.backgroundColor = bg
+    html.style.colorScheme = nightMode ? 'dark' : 'light'
   }, [nightMode])
 
   // ── Load spots ────────────────────────────────────────────────────────────

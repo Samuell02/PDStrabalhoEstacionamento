@@ -31,7 +31,7 @@ export default function AdminNotFound() {
 
         <div>
           <div style={{ fontFamily: "'DM Serif Display', serif", fontSize: '4rem', color: '#dc2626', lineHeight: 1, marginBottom: '0.25rem' }}>404</div>
-          <h1 style={{ fontFamily: "'DM Serif Display', serif", fontSize: '1.375rem', color: text, margin: 0 }}>Acesso negado</h1>
+          <h1 style={{ fontFamily: "'DM Serif Display', serif", fontSize: '1.375rem', color: text, margin: 0 }}>Link Invalido.</h1>
         </div>
 
         <p style={{ fontSize: '0.9375rem', color: muted, lineHeight: 1.6, margin: 0 }}>
