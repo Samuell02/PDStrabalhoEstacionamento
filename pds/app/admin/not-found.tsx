@@ -35,7 +35,7 @@ export default function AdminNotFound() {
         </div>
 
         <p style={{ fontSize: '0.9375rem', color: muted, lineHeight: 1.6, margin: 0 }}>
-          Você não tem permissão para acessar o painel administrativo. Esta página é restrita a administradores.
+          Pagina não Encontrada.
         </p>
 
         <button
