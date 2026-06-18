@@ -168,8 +168,12 @@ function ParkingInner() {
     localStorage.setItem('nightMode', JSON.stringify(nightMode))
     const html = document.documentElement
     const bg = nightMode ? '#1a1a1a' : '#FFF5F2'
+    const gradient = nightMode
+      ? 'linear-gradient(160deg, #1a1a1a 0%, #161616 45%, #0f0f0f 100%)'
+      : 'linear-gradient(160deg, #FFF5F2 0%, #FFFAF7 45%, #FAF3EE 100%)'
     html.classList.toggle('dark', nightMode)
     html.style.setProperty('--bg-color', bg)
+    html.style.setProperty('--bg-gradient', gradient)
     html.style.backgroundColor = bg
     html.style.colorScheme = nightMode ? 'dark' : 'light'
   }, [nightMode])
@@ -388,7 +392,7 @@ function ParkingInner() {
 
         .park-root {
           min-height: 100svh; display: flex; flex-direction: column;
-          background: var(--bg-color); transition: background 0.4s; position: relative;
+          background: var(--bg-gradient); transition: background 0.4s; position: relative;
         }
         .park-root::before {
           content: ''; position: fixed; inset: 0;

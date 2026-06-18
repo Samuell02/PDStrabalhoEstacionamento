@@ -38,8 +38,12 @@ export default function RootLayout({
                   var isDark = saved !== null ? JSON.parse(saved) : false;
                   var html = document.documentElement;
                   var bg = isDark ? '#1a1a1a' : '#FFF5F2';
+                  var gradient = isDark
+                    ? 'linear-gradient(160deg, #1a1a1a 0%, #161616 45%, #0f0f0f 100%)'
+                    : 'linear-gradient(160deg, #FFF5F2 0%, #FFFAF7 45%, #FAF3EE 100%)';
                   html.classList.toggle('dark', isDark);
                   html.style.setProperty('--bg-color', bg);
+                  html.style.setProperty('--bg-gradient', gradient);
                   html.style.backgroundColor = bg;
                   html.style.colorScheme = isDark ? 'dark' : 'light';
                 } catch (e) {}
