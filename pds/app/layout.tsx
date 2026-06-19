@@ -37,10 +37,10 @@ export default function RootLayout({
                   var saved = localStorage.getItem('nightMode');
                   var isDark = saved !== null ? JSON.parse(saved) : false;
                   var html = document.documentElement;
-                  var bg = isDark ? '#1a1a1a' : '#FFF5F2';
+                  var bg = isDark ? '#1a1a1a' : '#FFFFFF';
                   var gradient = isDark
                     ? 'linear-gradient(160deg, #1a1a1a 0%, #161616 45%, #0f0f0f 100%)'
-                    : 'linear-gradient(160deg, #FFF5F2 0%, #FFFAF7 45%, #FAF3EE 100%)';
+                    : 'linear-gradient(160deg, #ffffff 0%, #f0f7ff 50%, #e3f0ff 100%)';
                   html.classList.toggle('dark', isDark);
                   html.style.setProperty('--bg-color', bg);
                   html.style.setProperty('--bg-gradient', gradient);

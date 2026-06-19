@@ -167,10 +167,10 @@ function ParkingInner() {
   React.useEffect(() => {
     localStorage.setItem('nightMode', JSON.stringify(nightMode))
     const html = document.documentElement
-    const bg = nightMode ? '#1a1a1a' : '#FFF5F2'
+    const bg = nightMode ? '#1a1a1a' : '#FFFFFF'
     const gradient = nightMode
       ? 'linear-gradient(160deg, #1a1a1a 0%, #161616 45%, #0f0f0f 100%)'
-      : 'linear-gradient(160deg, #FFF5F2 0%, #FFFAF7 45%, #FAF3EE 100%)'
+      : 'linear-gradient(160deg, #ffffff 0%, #f0f7ff 50%, #e3f0ff 100%)'
     html.classList.toggle('dark', nightMode)
     html.style.setProperty('--bg-color', bg)
     html.style.setProperty('--bg-gradient', gradient)
