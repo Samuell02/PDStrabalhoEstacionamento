@@ -114,6 +114,7 @@ function ParkingInner() {
   const [name, setName] = React.useState('')
   const [plate, setPlate] = React.useState('')
   const [loading, setLoading] = React.useState(false)
+  const [confirmRemove, setConfirmRemove] = React.useState(false)
   const [initialLoading, setInitialLoading] = React.useState(true)
   const [parkedSpaces, setParkedSpaces] = React.useState<Record<string, ParkingSpot>>({})
   const [mySpace, setMySpace] = React.useState('')
@@ -274,6 +275,7 @@ function ParkingInner() {
     setPlate('')
     setCpf('')
     setPaymentMethod('card')
+    setConfirmRemove(false)
   }
 
   const closeModal = () => {
@@ -282,6 +284,7 @@ function ParkingInner() {
     setName('')
     setPlate('')
     setCpf('')
+    setConfirmRemove(false)
   }
 
   // ── Submit: go to Stripe Checkout ─────────────────────────────────────────
@@ -484,6 +487,7 @@ function ParkingInner() {
 
         .modal-title { font-family: 'DM Serif Display', serif; font-size: 1.5rem; color: ${colors.text}; margin-bottom: 0.25rem; }
         .modal-sub { font-size: 0.875rem; color: ${colors.muted}; margin-bottom: 1.25rem; }
+        .confirm-text { font-size: 0.875rem; color: ${colors.text}; background: ${n ? 'rgba(220,38,38,0.1)' : '#fef2f2'}; border: 1px solid ${n ? 'rgba(220,38,38,0.25)' : '#fecaca'}; border-radius: 10px; padding: 0.75rem 1rem; margin-bottom: 1.125rem; line-height: 1.5; }
 
         /* Info step inputs */
         .input-group { display: flex; flex-direction: column; gap: 0.375rem; margin-bottom: 0.875rem; }
@@ -747,13 +751,27 @@ function ParkingInner() {
                     <button onClick={closeModal} className="modal-btn btn-ghost">Fechar</button>
                   )}
 
-                  {/* ── My spot: free it ── */}
-                  {selectedIsMySpot && (
+                  {/* ── My spot: free it (with confirmation) ── */}
+                  {selectedIsMySpot && !confirmRemove && (
                     <>
-                      <button onClick={handleRemove} disabled={loading} className="modal-btn btn-danger">
-                        {loading ? 'Liberando...' : 'Liberar minha vaga'}
+                      <button onClick={() => setConfirmRemove(true)} disabled={loading} className="modal-btn btn-danger">
+                        Liberar minha vaga
                       </button>
                       <button onClick={closeModal} className="modal-btn btn-ghost">Cancelar</button>
+                    </>
+                  )}
+
+                  {selectedIsMySpot && confirmRemove && (
+                    <>
+                      <p className="confirm-text">
+                        Tem certeza que deseja liberar a vaga {selectedSpace.toUpperCase()}? Esta ação não pode ser desfeita.
+                      </p>
+                      <button onClick={handleRemove} disabled={loading} className="modal-btn btn-danger">
+                        {loading ? 'Liberando...' : 'Sim, liberar vaga'}
+                      </button>
+                      <button onClick={() => setConfirmRemove(false)} disabled={loading} className="modal-btn btn-ghost">
+                        Voltar
+                      </button>
                     </>
                   )}
 
