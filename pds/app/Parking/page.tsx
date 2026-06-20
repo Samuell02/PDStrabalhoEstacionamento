@@ -3,7 +3,7 @@
 export const dynamic = 'force-dynamic'
 
 import React, { Suspense } from 'react'
-import { Moon, Sun, LogOut, CreditCard, QrCode, FileText, Car, X, CheckCircle, AlertCircle, AlertTriangle, Clock, Eye, EyeOff, Shield } from 'lucide-react'
+import { Moon, Sun, LogOut, CreditCard, QrCode, FileText, Car, X, CheckCircle, AlertCircle, AlertTriangle, Clock, Eye, EyeOff, Shield, Copy, Check } from 'lucide-react'
 import {
   createCheckoutSession,
   getParkings,
@@ -115,6 +115,7 @@ function ParkingInner() {
   const [plate, setPlate] = React.useState('')
   const [loading, setLoading] = React.useState(false)
   const [confirmRemove, setConfirmRemove] = React.useState(false)
+  const [copiedPlate, setCopiedPlate] = React.useState(false)
   const [initialLoading, setInitialLoading] = React.useState(true)
   const [parkedSpaces, setParkedSpaces] = React.useState<Record<string, ParkingSpot>>({})
   const [mySpace, setMySpace] = React.useState('')
@@ -285,6 +286,18 @@ function ParkingInner() {
     setPlate('')
     setCpf('')
     setConfirmRemove(false)
+    setCopiedPlate(false)
+  }
+
+  const copyPlate = async (plateValue: string) => {
+    try {
+      await navigator.clipboard.writeText(plateValue)
+      setCopiedPlate(true)
+      showToast('Placa copiada!', 'success')
+      setTimeout(() => setCopiedPlate(false), 2000)
+    } catch {
+      showToast('Não foi possível copiar a placa.', 'error')
+    }
   }
 
   // ── Submit: go to Stripe Checkout ─────────────────────────────────────────
@@ -757,12 +770,27 @@ function ParkingInner() {
 
                   {/* ── Occupied (not mine) ── */}
                   {selectedIsOccupied && !selectedIsMySpot && (
-                    <button onClick={closeModal} className="modal-btn btn-ghost">Fechar</button>
+                    <>
+                      {isAdmin && parkedSpaces[selectedSpace]?.plate && (
+                        <button
+                          onClick={() => copyPlate(parkedSpaces[selectedSpace].plate)}
+                          className="modal-btn btn-ghost"
+                        >
+                          {copiedPlate ? <Check size={15} /> : <Copy size={15} />}
+                          {copiedPlate ? 'Placa copiada!' : 'Copiar placa'}
+                        </button>
+                      )}
+                      <button onClick={closeModal} className="modal-btn btn-ghost">Fechar</button>
+                    </>
                   )}
 
                   {/* ── My spot: free it (with confirmation) ── */}
                   {selectedIsMySpot && !confirmRemove && (
                     <>
+                      <button onClick={() => copyPlate(myPlate)} className="modal-btn btn-ghost">
+                        {copiedPlate ? <Check size={15} /> : <Copy size={15} />}
+                        {copiedPlate ? 'Placa copiada!' : 'Copiar placa'}
+                      </button>
                       <button onClick={() => setConfirmRemove(true)} disabled={loading} className="modal-btn btn-danger">
                         Liberar minha vaga
                       </button>
