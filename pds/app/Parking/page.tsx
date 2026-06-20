@@ -231,32 +231,42 @@ function ParkingInner() {
 
     if (status === 'success' && sessionId && space) {
       ;(async () => {
-        const res = await verifyAndFinalizeSession(sessionId)
-        if (!res || 'error' in res) {
-          showToast('Pagamento confirmado, mas houve um erro ao salvar a vaga. Contate o suporte.', 'error')
-          return
-        }
+        try {
+          console.log('DEBUG: chamando verifyAndFinalizeSession com sessionId =', sessionId)
+          const res = await verifyAndFinalizeSession(sessionId)
+          console.log('DEBUG: resultado de verifyAndFinalizeSession =', JSON.stringify(res))
 
-        const { space: s, name: n, plate: p } = res
-        const isPending = 'isPending' in res && res.isPending
+          if (!res || 'error' in res) {
+            console.log('DEBUG: bloco de erro acionado')
+            showToast('Pagamento confirmado, mas houve um erro ao salvar a vaga. Contate o suporte.', 'error')
+            return
+          }
 
-        setParkedSpaces((prev) => ({ ...prev, [s]: { name: n, plate: p } }))
-        setMySpace(s)
-        setMyName(n)
-        setMyPlate(p)
-        localStorage.setItem('mySpace', s)
-        localStorage.setItem('myName', n)
-        localStorage.setItem('myPlate', p)
+          const { space: s, name: n, plate: p } = res
+          const isPending = 'isPending' in res && res.isPending
 
-        if (isPending) {
-          // Boleto: spot held in UI, but webhook confirms when bank payment arrives
-          showToast(
-            `Boleto emitido! Pague em até 3 dias úteis para confirmar a vaga ${s.toUpperCase()}.`,
-            'pending',
-          )
-        } else {
-          showToast(`Vaga ${s.toUpperCase()} reservada com sucesso!`, 'success')
-          addToHistory(s, p)
+          setParkedSpaces((prev) => ({ ...prev, [s]: { name: n, plate: p } }))
+          setMySpace(s)
+          setMyName(n)
+          setMyPlate(p)
+          localStorage.setItem('mySpace', s)
+          localStorage.setItem('myName', n)
+          localStorage.setItem('myPlate', p)
+
+          if (isPending) {
+            // Boleto: spot held in UI, but webhook confirms when bank payment arrives
+            showToast(
+              `Boleto emitido! Pague em até 3 dias úteis para confirmar a vaga ${s.toUpperCase()}.`,
+              'pending',
+            )
+          } else {
+            console.log('DEBUG: mostrando toast de sucesso e chamando addToHistory')
+            showToast(`Vaga ${s.toUpperCase()} reservada com sucesso!`, 'success')
+            addToHistory(s, p)
+          }
+        } catch (err) {
+          console.error('DEBUG: ERRO CAPTURADO no bloco de redirect:', err)
+          showToast('Erro inesperado ao processar pagamento. Veja o console.', 'error')
         }
       })()
     }
