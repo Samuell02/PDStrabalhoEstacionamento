@@ -217,6 +217,8 @@ function ParkingInner() {
     const sessionId = searchParams.get('session_id')
     const space = searchParams.get('space')
 
+    console.log('DEBUG redirect params:', { status, sessionId, space, fullUrl: window.location.href })
+
     if (!status) return
 
     // Clean up URL
