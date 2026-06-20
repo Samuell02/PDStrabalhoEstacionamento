@@ -17,7 +17,7 @@ type ParkingSpot = { name: string; plate: string; createdAt?: string }
 type PaymentMethod = 'card' | 'pix' | 'boleto'
 type ToastType = 'success' | 'error' | 'pending'
 type ModalStep = 'info' | 'payment' | 'processing'
-type SpotFilter = 'all' | 'available' | 'occupied'
+type SpotFilter = 'all' | 'available' | 'occupied' | 'myrow'
 
 // ─── CPF formatter ────────────────────────────────────────────────────────────
 function formatCpf(value: string) {
@@ -339,6 +339,7 @@ function ParkingInner() {
     localStorage.removeItem('mySpace')
     localStorage.removeItem('myName')
     localStorage.removeItem('myPlate')
+    setSpotFilter(prev => (prev === 'myrow' ? 'all' : prev))
 
     showToast('Vaga liberada com sucesso!', 'success')
     closeModal()
@@ -350,6 +351,7 @@ function ParkingInner() {
   const totalSpots = rows.length * columns.length
   const occupiedCount = Object.keys(parkedSpaces).length
   const availableCount = totalSpots - occupiedCount
+  const myRow = mySpace ? mySpace.charAt(0) : null
   const n = nightMode
 
   const getOccupiedMessage = () => {
@@ -446,6 +448,7 @@ function ParkingInner() {
         .filter-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
         .filter-dot.green { background: #22c55e; }
         .filter-dot.red   { background: #ef4444; }
+        .filter-dot.blue  { background: #3b82f6; }
         .filter-dot.all   { background: ${colors.muted}; }
         .empty-filter { text-align: center; padding: 2rem 1rem; color: ${colors.muted}; font-size: 0.875rem; }
         .row-label { font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: ${n ? '#4b5563' : '#a8a29e'}; margin-bottom: 0.5rem; padding-left: 0.25rem; display: flex; align-items: center; justify-content: space-between; }
@@ -647,9 +650,14 @@ function ParkingInner() {
                 <button className={`filter-btn ${spotFilter === 'occupied' ? 'active' : ''}`} onClick={() => setSpotFilter('occupied')}>
                   <span className="filter-dot red" /> Ocupadas ({occupiedCount})
                 </button>
+                {myRow && (
+                  <button className={`filter-btn ${spotFilter === 'myrow' ? 'active' : ''}`} onClick={() => setSpotFilter('myrow')}>
+                    <span className="filter-dot blue" /> Minha fileira ({myRow.toUpperCase()})
+                  </button>
+                )}
               </div>
 
-              {rows.filter(row => !hiddenRows.includes(row)).map(row => {
+              {rows.filter(row => !hiddenRows.includes(row) && (spotFilter !== 'myrow' || row === myRow)).map(row => {
                 const rowSpots = columns
                   .map(col => `${row}${col}`)
                   .filter(spaceName => {
@@ -691,7 +699,7 @@ function ParkingInner() {
               })}
 
               {/* Empty state when filter has no matches (only among visible rows) */}
-              {rows.filter(row => !hiddenRows.includes(row)).every(row =>
+              {rows.filter(row => !hiddenRows.includes(row) && (spotFilter !== 'myrow' || row === myRow)).every(row =>
                 columns
                   .map(col => `${row}${col}`)
                   .filter(spaceName => {
@@ -703,6 +711,7 @@ function ParkingInner() {
                 <div className="empty-filter">
                   {hiddenRows.length === rows.length
                     ? 'Todas as fileiras estão ocultas.'
+                    : spotFilter === 'myrow' ? 'Sua fileira está oculta ou vazia.'
                     : spotFilter === 'available' ? 'Nenhuma vaga disponível no momento.' : 'Nenhuma vaga ocupada no momento.'}
                 </div>
               )}
