@@ -3,7 +3,7 @@
 export const dynamic = 'force-dynamic'
 
 import React, { Suspense } from 'react'
-import { Moon, Sun, LogOut, CreditCard, QrCode, FileText, Car, X, CheckCircle, AlertCircle, AlertTriangle, Clock, Eye, EyeOff, Shield, Copy, Check } from 'lucide-react'
+import { Moon, Sun, LogOut, CreditCard, QrCode, FileText, Car, X, CheckCircle, AlertCircle, AlertTriangle, Clock, Eye, EyeOff, Shield, Copy, Check, History } from 'lucide-react'
 import {
   createCheckoutSession,
   getParkings,
@@ -14,6 +14,7 @@ import { createClient } from '@/lib/supabase/client'
 import { useRouter, useSearchParams } from 'next/navigation'
 
 type ParkingSpot = { name: string; plate: string; createdAt?: string }
+type HistoryEntry = { space: string; plate: string; date: string }
 type PaymentMethod = 'card' | 'pix' | 'boleto'
 type ToastType = 'success' | 'error' | 'pending'
 type ModalStep = 'info' | 'payment' | 'processing'
@@ -116,6 +117,8 @@ function ParkingInner() {
   const [loading, setLoading] = React.useState(false)
   const [confirmRemove, setConfirmRemove] = React.useState(false)
   const [copiedPlate, setCopiedPlate] = React.useState(false)
+  const [spotHistory, setSpotHistory] = React.useState<HistoryEntry[]>([])
+  const [showHistory, setShowHistory] = React.useState(false)
   const [initialLoading, setInitialLoading] = React.useState(true)
   const [parkedSpaces, setParkedSpaces] = React.useState<Record<string, ParkingSpot>>({})
   const [mySpace, setMySpace] = React.useState('')
@@ -163,6 +166,11 @@ function ParkingInner() {
     try {
       const savedHidden = localStorage.getItem('hiddenRows')
       if (savedHidden) setHiddenRows(JSON.parse(savedHidden))
+    } catch {}
+
+    try {
+      const savedHistory = localStorage.getItem('spotHistory')
+      if (savedHistory) setSpotHistory(JSON.parse(savedHistory))
     } catch {}
   }, [])
 
@@ -246,6 +254,7 @@ function ParkingInner() {
           )
         } else {
           showToast(`Vaga ${s.toUpperCase()} reservada com sucesso!`, 'success')
+          addToHistory(s, p)
         }
       })()
     }
@@ -298,6 +307,15 @@ function ParkingInner() {
     } catch {
       showToast('Não foi possível copiar a placa.', 'error')
     }
+  }
+
+  const addToHistory = (space: string, plate: string) => {
+    setSpotHistory(prev => {
+      const entry: HistoryEntry = { space, plate, date: new Date().toISOString() }
+      const next = [entry, ...prev.filter(h => h.space !== space)].slice(0, 5)
+      localStorage.setItem('spotHistory', JSON.stringify(next))
+      return next
+    })
   }
 
   // ── Submit: go to Stripe Checkout ─────────────────────────────────────────
@@ -438,6 +456,22 @@ function ParkingInner() {
         .logout-btn:hover { border-color: #dc2626; background: ${n ? 'rgba(220,38,38,0.08)' : 'rgba(220,38,38,0.05)'}; }
         .admin-btn { display: flex; align-items: center; gap: 0.375rem; padding: 0.4375rem 0.875rem; border-radius: 9px; border: 1.5px solid rgba(220,38,38,0.35); background: rgba(220,38,38,0.08); color: #dc2626; font-size: 0.8125rem; font-weight: 600; font-family: 'DM Sans', sans-serif; cursor: pointer; transition: all 0.15s; }
         .admin-btn:hover { background: rgba(220,38,38,0.15); border-color: #dc2626; }
+
+        .history-backdrop { position: fixed; inset: 0; z-index: 90; }
+        .history-popover {
+          position: absolute; top: calc(100% + 0.5rem); right: 0; z-index: 95;
+          width: 260px; max-height: 320px; overflow-y: auto;
+          background: ${colors.card}; border: 1.5px solid ${colors.cardBorder}; border-radius: 14px;
+          box-shadow: ${n ? '0 16px 40px rgba(0,0,0,0.5)' : '0 16px 40px rgba(0,0,0,0.12)'};
+          padding: 0.625rem; animation: popIn 0.15s cubic-bezier(0.16,1,0.3,1) both;
+        }
+        .history-title { font-size: 0.6875rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: ${colors.muted}; padding: 0.375rem 0.5rem 0.5rem; }
+        .history-empty { font-size: 0.8125rem; color: ${colors.muted}; padding: 0.75rem 0.5rem; text-align: center; }
+        .history-item { display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem; border-radius: 8px; transition: background 0.15s; }
+        .history-item:hover { background: ${n ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.025)'}; }
+        .history-space { font-family: 'DM Serif Display', serif; font-size: 0.875rem; color: #3b82f6; background: rgba(59,130,246,0.1); padding: 0.1rem 0.45rem; border-radius: 6px; flex-shrink: 0; }
+        .history-plate { font-family: monospace; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.06em; color: ${colors.text}; flex: 1; }
+        .history-date { font-size: 0.6875rem; color: ${colors.muted}; flex-shrink: 0; }
 
         /* Stats bar */
         .stats-bar { position: relative; z-index: 5; display: flex; align-items: center; justify-content: center; gap: 1.5rem; padding: 0.75rem 1.5rem; background: ${colors.statsBg}; border-bottom: 1px solid ${colors.statsBorder}; flex-wrap: wrap; }
@@ -589,6 +623,32 @@ function ParkingInner() {
                 <Shield size={14} /> Admin
               </button>
             )}
+            <div style={{ position: 'relative' }}>
+              <button className="icon-btn" onClick={() => setShowHistory(p => !p)} aria-label="Histórico de vagas">
+                <History size={15} />
+              </button>
+              {showHistory && (
+                <>
+                  <div className="history-backdrop" onClick={() => setShowHistory(false)} />
+                  <div className="history-popover">
+                    <div className="history-title">Vagas recentes</div>
+                    {spotHistory.length === 0 ? (
+                      <div className="history-empty">Nenhuma vaga reservada ainda.</div>
+                    ) : (
+                      spotHistory.map(h => (
+                        <div key={h.space + h.date} className="history-item">
+                          <span className="history-space">{h.space.toUpperCase()}</span>
+                          <span className="history-plate">{h.plate}</span>
+                          <span className="history-date">
+                            {new Date(h.date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
+                          </span>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
             <button className="icon-btn" onClick={() => setNightMode(p => !p)} aria-label="Toggle theme">
               {nightMode ? <Sun size={15} /> : <Moon size={15} />}
             </button>
