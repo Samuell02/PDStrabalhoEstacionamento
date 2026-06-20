@@ -37,9 +37,9 @@ export default function RootLayout({
                   var saved = localStorage.getItem('nightMode');
                   var isDark = saved !== null ? JSON.parse(saved) : false;
                   var html = document.documentElement;
-                  var bg = isDark ? '#1a1a1a' : '#FFFFFF';
+                  var bg = isDark ? '#0a0e14' : '#FFFFFF';
                   var gradient = isDark
-                    ? 'linear-gradient(160deg, #1a1a1a 0%, #161616 45%, #0f0f0f 100%)'
+                    ? 'linear-gradient(160deg, #000000 0%, #0a0e1a 45%, #0d1526 100%)'
                     : 'linear-gradient(160deg, #ffffff 0%, #f0f7ff 50%, #e3f0ff 100%)';
                   html.classList.toggle('dark', isDark);
                   html.style.setProperty('--bg-color', bg);
