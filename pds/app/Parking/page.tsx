@@ -221,11 +221,9 @@ function ParkingInner() {
 
     if (!status) return
 
-    // Clean up URL
-    router.replace('/Parking', { scroll: false })
-
     if (status === 'cancelled') {
       showToast('Pagamento cancelado. Nenhuma cobrança foi realizada.', 'error')
+      router.replace('/Parking', { scroll: false })
       return
     }
 
@@ -267,6 +265,10 @@ function ParkingInner() {
         } catch (err) {
           console.error('DEBUG: ERRO CAPTURADO no bloco de redirect:', err)
           showToast('Erro inesperado ao processar pagamento. Veja o console.', 'error')
+        } finally {
+          // Clean up URL only after the async verification has fully settled,
+          // so router.replace() never aborts the in-flight Server Action fetch.
+          router.replace('/Parking', { scroll: false })
         }
       })()
     }
